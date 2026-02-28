@@ -1,0 +1,40 @@
+{
+  "tone": "technical",
+  "expertise_topics": [
+    "artificial intelligence",
+    "machine learning",
+    "large language models",
+    "natural language processing",
+    "computer vision"
+  ],
+  "heroes": [
+    {
+      "name": "Geoffrey Hinton",
+      "description": "Pioneer of deep learning and neural networks"
+    },
+    {
+      "name": "Andrej Karpathy",
+      "description": "AI educator and former Tesla AI director"
+    }
+  ],
+  "enemies": [
+    {
+      "name": "AI Hype",
+      "description": "Overpromising and under-delivering on AI capabilities"
+    }
+  ],
+  "platform_preferences": {
+    "twitter": {
+      "max_thread_length": 8,
+      "hashtags": true,
+      "emoji": false
+    },
+    "linkedin": {
+      "hashtags": true,
+      "emoji": false
+    }
+  },
+  "relevance_threshold": 60,
+  "digest_schedule": "daily",
+  "monitoring_interval": "hourly"
+}

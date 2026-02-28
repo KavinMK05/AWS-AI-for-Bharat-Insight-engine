@@ -1,0 +1,18 @@
+# Copy this to terraform.tfvars and fill in real values.
+# NEVER commit terraform.tfvars — it is gitignored.
+
+environment            = "dev"
+aws_region             = "ap-south-1"
+relevance_threshold    = 60
+digest_schedule        = "rate(1 day)"
+monitoring_interval    = "rate(1 hour)"
+admin_email            = "admin@example.com"
+
+# Cost control toggles
+enable_vpc                  = false
+enable_rds                  = false
+enable_cloudwatch_dashboard = true
+
+# RDS password — only needed when enable_rds = true
+# Prefer setting via: export TF_VAR_rds_master_password="your-password"
+# rds_master_password = ""

@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "paths": {
+      "@insight-engine/core": ["./packages/core/src"],
+      "@insight-engine/watchtower": ["./packages/watchtower/src"],
+      "@insight-engine/analyst": ["./packages/analyst/src"],
+      "@insight-engine/ghostwriter": ["./packages/ghostwriter/src"],
+      "@insight-engine/gatekeeper": ["./packages/gatekeeper/src"],
+      "@insight-engine/publisher": ["./packages/publisher/src"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "coverage", ".next"]
+}
