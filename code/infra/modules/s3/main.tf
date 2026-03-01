@@ -31,6 +31,17 @@ resource "aws_s3_bucket_public_access_block" "lambda_deployments" {
   restrict_public_buckets = true
 }
 
+# Upload the default persona file to the persona-files bucket.
+# Lambdas load this at runtime. Operators can replace it with a custom
+# persona via the AWS CLI or Console without redeploying infrastructure.
+resource "aws_s3_object" "persona_example" {
+  bucket       = aws_s3_bucket.persona_files.id
+  key          = "persona.json"
+  source       = "${path.module}/../../../persona.example.json"
+  content_type = "application/json"
+  etag         = filemd5("${path.module}/../../../persona.example.json")
+}
+
 # IAM Policy for read access
 resource "aws_iam_policy" "read" {
   name = "${var.prefix}-s3-read"

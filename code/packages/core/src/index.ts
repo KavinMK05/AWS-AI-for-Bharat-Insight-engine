@@ -49,5 +49,8 @@ export type { TableName } from './dynamodb.js';
 export { createRdsClient } from './rds.js';
 export type { RdsConfig, QueryResult, IRdsClient } from './rds.js';
 
+// Persona
+export { loadPersona, personaFileSchema } from './persona.js';
+
 // OAuth
 export { OAuthTokenManager, OAuthRefreshError } from './oauth.js';
