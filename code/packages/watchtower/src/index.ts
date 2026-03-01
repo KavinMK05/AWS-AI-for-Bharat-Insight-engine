@@ -1,3 +1,4 @@
 // @insight-engine/watchtower — Content Ingestion Lambda
-// Implementation in Phase 3
-export {};
+// Exports the EventBridge-triggered handler for AWS Lambda.
+
+export { handler } from './handler.js';

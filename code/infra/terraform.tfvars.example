@@ -16,3 +16,8 @@ enable_cloudwatch_dashboard = true
 # RDS password — only needed when enable_rds = true
 # Prefer setting via: export TF_VAR_rds_master_password="your-password"
 # rds_master_password = ""
+
+# Watchtower source configuration (Phase 3)
+rss_feed_urls     = "https://feeds.arstechnica.com/arstechnica/technology-lab,https://hnrss.org/newest?q=AI"
+arxiv_categories  = "cs.AI,cs.LG,cs.CL"
+arxiv_max_results = "10"

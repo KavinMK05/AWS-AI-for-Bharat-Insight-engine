@@ -115,6 +115,9 @@ module "lambda_watchtower" {
     INGESTION_QUEUE_URL  = module.sqs.queue_urls["ingestion"]
     PERSONA_FILES_BUCKET = module.s3.bucket_names["persona_files"]
     TABLE_PREFIX         = "${var.environment}-"
+    RSS_FEED_URLS        = var.rss_feed_urls
+    ARXIV_CATEGORIES     = var.arxiv_categories
+    ARXIV_MAX_RESULTS    = var.arxiv_max_results
   }
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,

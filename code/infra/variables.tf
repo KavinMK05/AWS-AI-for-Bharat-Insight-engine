@@ -66,3 +66,23 @@ variable "rds_master_password" {
   default     = ""
   sensitive   = true
 }
+
+# --- Watchtower Source Configuration (Phase 3) ---
+
+variable "rss_feed_urls" {
+  description = "Comma-separated list of RSS feed URLs for the Watchtower to monitor"
+  type        = string
+  default     = ""
+}
+
+variable "arxiv_categories" {
+  description = "Comma-separated list of arXiv categories to monitor (e.g. cs.AI,cs.LG,cs.CL)"
+  type        = string
+  default     = "cs.AI,cs.LG,cs.CL"
+}
+
+variable "arxiv_max_results" {
+  description = "Maximum number of arXiv papers to fetch per invocation"
+  type        = string
+  default     = "10"
+}
