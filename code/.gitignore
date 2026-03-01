@@ -10,6 +10,17 @@ out/
 
 # TypeScript
 *.tsbuildinfo
+*.d.ts
+*.d.ts.map
+*.js.map
+
+# Allow config files that happen to be JS/MJS
+!eslint.config.mjs
+!vitest.config.ts
+!next.config.ts
+!*.config.js
+!*.config.mjs
+!*.config.cjs
 
 # Environment & secrets
 .env
