@@ -77,41 +77,41 @@ insight-engine/
 
 ### 1.1 — Monorepo Setup
 
-- [ ] Install `pnpm` and initialise a workspace with `pnpm-workspace.yaml` listing all `packages/*` and `apps/*`
-- [ ] Create `tsconfig.base.json` at root with `strict: true`, `moduleResolution: bundler`, and path aliases for `@insight-engine/*` packages
-- [ ] Each package gets its own `tsconfig.json` that extends the base
-- [ ] Configure ESLint (with `@typescript-eslint`) and Prettier with a single root config shared across all packages
-- [ ] Add root-level `package.json` scripts: `build`, `lint`, `test`, `typecheck`
+- [x] Install `pnpm` and initialise a workspace with `pnpm-workspace.yaml` listing all `packages/*` and `apps/*`
+- [x] Create `tsconfig.base.json` at root with `strict: true`, `moduleResolution: bundler`, and path aliases for `@insight-engine/*` packages
+- [x] Each package gets its own `tsconfig.json` that extends the base
+- [x] Configure ESLint (with `@typescript-eslint`) and Prettier with a single root config shared across all packages
+- [x] Add root-level `package.json` scripts: `build`, `lint`, `test`, `typecheck`
 
 ### 1.2 — Terraform: Remote State Bootstrap
 
 > **Why remote state?** By default Terraform stores a record of what it has created (the "state file") on your local disk. If you lose it or work in a team, things break. We store it in S3 instead, with a DynamoDB table used as a lock so two people can't run `terraform apply` simultaneously.
 
-- [ ] Manually create (once, outside Terraform) a bootstrap S3 bucket and DynamoDB table for state storage — these cannot manage themselves
-- [ ] Write `infra/backend.tf` pointing to that S3 bucket and DynamoDB table
-- [ ] Write `infra/variables.tf` with input variables: `environment` (dev/prod), `aws_region`, `relevance_threshold`, `digest_schedule`, `monitoring_interval`, plus cost-control toggles: `enable_vpc` (default `false`), `enable_rds` (default `false`), `enable_cloudwatch_dashboard` (default `true`)
-- [ ] Write `infra/terraform.tfvars.example` as a committed reference; actual `.tfvars` files are gitignored
+- [x] Manually create (once, outside Terraform) a bootstrap S3 bucket and DynamoDB table for state storage — these cannot manage themselves
+- [x] Write `infra/backend.tf` pointing to that S3 bucket and DynamoDB table
+- [x] Write `infra/variables.tf` with input variables: `environment` (dev/prod), `aws_region`, `relevance_threshold`, `digest_schedule`, `monitoring_interval`, plus cost-control toggles: `enable_vpc` (default `false`), `enable_rds` (default `false`), `enable_cloudwatch_dashboard` (default `true`)
+- [x] Write `infra/terraform.tfvars.example` as a committed reference; actual `.tfvars` files are gitignored
 
 ### 1.3 — Terraform: Core Infrastructure Modules
 
 Write a Terraform module for each concern below. Each module lives in `infra/modules/<name>/` with its own `main.tf`, `variables.tf`, and `outputs.tf`.
 
-- [ ] **`vpc` module** — **Skeleton only in Phase 1** (gated by `var.enable_vpc`, default `false`). When enabled (Phase 8+): VPC with public and private subnets across 2 AZs; NAT Gateway in the public subnet; Lambda security group (allows all outbound); RDS security group (allows inbound on port 5432 from Lambda SG only). In Phase 1, Lambdas run outside VPC with direct internet access — no NAT Gateway cost (~$32/month saved)
-- [ ] **`dynamodb` module** — Create tables:
+- [x] **`vpc` module** — **Skeleton only in Phase 1** (gated by `var.enable_vpc`, default `false`). When enabled (Phase 8+): VPC with public and private subnets across 2 AZs; NAT Gateway in the public subnet; Lambda security group (allows all outbound); RDS security group (allows inbound on port 5432 from Lambda SG only). In Phase 1, Lambdas run outside VPC with direct internet access — no NAT Gateway cost (~$32/month saved)
+- [x] **`dynamodb` module** — Create tables:
   - `ContentItems` (PK: `id`, GSI on `sourceUrl` for dedup, GSI on `ingestedAt` for recency queries)
   - `HotTakes` (PK: `id`, GSI on `contentItemId`)
   - `DraftContent` (PK: `id`, GSI on `status` + `createdAt` for digest queries)
   - `PublishingQueue` (PK: `id`, GSI on `platform` + `status`)
   - `Metrics` (PK: `date`, SK: `metricName`)
   - Enable DynamoDB Streams on `DraftContent` and `ContentItems` (needed for Phase 8 RDS sync)
-- [ ] **`rds` module** — **Skeleton only in Phase 1** (gated by `var.enable_rds`, default `false`). When enabled (Phase 8+): PostgreSQL 15 `db.t3.micro` instance in a private subnet; security group allowing inbound only from Lambda SG; automated backups enabled; store connection string in SSM. Saves ~$12-15/month when disabled
-- [ ] **`sqs` module** — Three queues with Dead Letter Queues (DLQ) attached:
+- [x] **`rds` module** — **Skeleton only in Phase 1** (gated by `var.enable_rds`, default `false`). When enabled (Phase 8+): PostgreSQL 15 `db.t3.micro` instance in a private subnet; security group allowing inbound only from Lambda SG; automated backups enabled; store connection string in SSM. Saves ~$12-15/month when disabled
+- [x] **`sqs` module** — Three queues with Dead Letter Queues (DLQ) attached:
   - `ingestion-queue` → Analyst Lambda (triggered after Watchtower stores a ContentItem)
   - `generation-queue` → Ghostwriter Lambda (triggered after Analyst stores a HotTake)
   - `publish-queue` → Publisher Lambda (triggered after Gatekeeper approves a DraftContent)
   - Platforms supported: Twitter/X and LinkedIn only
-- [ ] **`s3` module** — Two buckets: `persona-files` (private, versioning enabled) and `lambda-deployments` (private, holds zipped Lambda code)
-- [ ] **`ssm` module** — Create SSM Parameter Store entries as placeholders; values are set manually or by a secrets manager pipeline, never by Terraform. Required parameters:
+- [x] **`s3` module** — Two buckets: `persona-files` (private, versioning enabled) and `lambda-deployments` (private, holds zipped Lambda code)
+- [x] **`ssm` module** — Create SSM Parameter Store entries as placeholders; values are set manually or by a secrets manager pipeline, never by Terraform. Required parameters:
     - `/insight-engine/{env}/twitter-client-id` — Twitter/X OAuth 2.0 Client ID (from X Developer Console)
     - `/insight-engine/{env}/twitter-client-secret` — Twitter/X OAuth 2.0 Client Secret (confidential client)
     - `/insight-engine/{env}/twitter-access-token` — Twitter/X OAuth 2.0 access token (obtained via Authorization Code Flow with PKCE)
@@ -120,23 +120,23 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
     - `/insight-engine/{env}/linkedin-client-secret` — LinkedIn OAuth 2.0 Client Secret
     - `/insight-engine/{env}/linkedin-access-token` — LinkedIn OAuth 2.0 access token (obtained via 3-legged OAuth flow)
     - `/insight-engine/{env}/linkedin-refresh-token` — LinkedIn OAuth 2.0 refresh token (available to approved MDP partners)
-- [ ] **`eventbridge` module** — Scheduled rules: hourly (Watchtower), configurable digest (Gatekeeper digest Lambda)
-- [ ] **`sns` module** — Admin alert topic; subscription created for admin email address
-- [ ] **`lambda` module** — A reusable module that accepts `function_name`, `handler`, `runtime` (default `nodejs20.x`), `environment_variables`, `iam_policy_arns`, and optional `vpc_config` (subnet IDs + security group IDs); creates the Lambda with a placeholder zip, the execution role, and CloudWatch log group. In Phase 1, no Lambdas use `vpc_config` (they run outside VPC). In Phase 8+, Lambdas that access RDS (Analyst, Ghostwriter, Publisher, Sync) **must** pass `vpc_config` pointing to the private subnets and the Lambda security group
-- [ ] **`api_gateway` module** — HTTP API (API Gateway v2) with routes for `/api/*` and `/health`; JWT authoriser pointing to Cognito
-- [ ] **`cognito` module** — User pool + app client for dashboard authentication
-- [ ] **`cloudwatch` module** — Log groups per Lambda, custom metrics namespace `InsightEngine`, alarms for error rate > 5%. CloudWatch Dashboard is gated by `var.enable_cloudwatch_dashboard` (default `true`, saves ~$3/month when disabled)
-- [ ] **`bedrock` module** — IAM policy granting `bedrock:InvokeModel` for the specified model IDs; attached to Analyst and Ghostwriter Lambda roles
+- [x] **`eventbridge` module** — Scheduled rules: hourly (Watchtower), configurable digest (Gatekeeper digest Lambda)
+- [x] **`sns` module** — Admin alert topic; subscription created for admin email address
+- [x] **`lambda` module** — A reusable module that accepts `function_name`, `handler`, `runtime` (default `nodejs20.x`), `environment_variables`, `iam_policy_arns`, and optional `vpc_config` (subnet IDs + security group IDs); creates the Lambda with a placeholder zip, the execution role, and CloudWatch log group. In Phase 1, no Lambdas use `vpc_config` (they run outside VPC). In Phase 8+, Lambdas that access RDS (Analyst, Ghostwriter, Publisher, Sync) **must** pass `vpc_config` pointing to the private subnets and the Lambda security group
+- [x] **`api_gateway` module** — HTTP API (API Gateway v2) with routes for `/api/*` and `/health`; JWT authoriser pointing to Cognito
+- [x] **`cognito` module** — User pool + app client for dashboard authentication
+- [x] **`cloudwatch` module** — Log groups per Lambda, custom metrics namespace `InsightEngine`, alarms for error rate > 5%. CloudWatch Dashboard is gated by `var.enable_cloudwatch_dashboard` (default `true`, saves ~$3/month when disabled)
+- [x] **`bedrock` module** — IAM policy granting `bedrock:InvokeModel` for the specified model IDs; attached to Analyst and Ghostwriter Lambda roles
 
 ### 1.4 — Shared Core Package (`packages/core`)
 
-- [ ] Define all shared TypeScript interfaces:
+- [x] Define all shared TypeScript interfaces:
   - `ContentItem`, `RelevanceScore`, `HotTake`, `DraftContent`, `ApprovalDigest`, `PublishingQueueItem`, `PersonaFile`, `OAuthTokenSet`
-- [ ] Implement DynamoDB client wrapper (using AWS SDK v3 `@aws-sdk/client-dynamodb` + `@aws-sdk/lib-dynamodb`)
-- [ ] Scaffold RDS client wrapper interface and types (implementation deferred to Phase 8 when `enable_rds` is turned on; `pg` and `pg-pool` dependencies are not installed in Phase 1)
-- [ ] Implement config loader: reads from env vars → SSM Parameter Store fallback; validates all required fields at startup; throws a descriptive named error for each missing/invalid value
-- [ ] Implement structured logger: outputs `{ timestamp, level, component, message, errorDetails? }` as JSON to stdout (CloudWatch picks this up automatically)
-- [ ] Scaffold `OAuthTokenManager` in `packages/core/src/oauth.ts`:
+- [x] Implement DynamoDB client wrapper (using AWS SDK v3 `@aws-sdk/client-dynamodb` + `@aws-sdk/lib-dynamodb`)
+- [x] Scaffold RDS client wrapper interface and types (implementation deferred to Phase 8 when `enable_rds` is turned on; `pg` and `pg-pool` dependencies are not installed in Phase 1)
+- [x] Implement config loader: reads from env vars → SSM Parameter Store fallback; validates all required fields at startup; throws a descriptive named error for each missing/invalid value
+- [x] Implement structured logger: outputs `{ timestamp, level, component, message, errorDetails? }` as JSON to stdout (CloudWatch picks this up automatically)
+- [x] Scaffold `OAuthTokenManager` in `packages/core/src/oauth.ts`:
   - `OAuthTokenSet` interface: `{ accessToken, refreshToken, expiresAt, platform }`
   - `loadTokens(platform: 'twitter' | 'linkedin'): Promise<OAuthTokenSet>` — reads tokens from SSM; caches in memory
   - `getValidAccessToken(platform): Promise<string>` — returns cached token if not expired (with 5-minute buffer); otherwise calls `refreshAccessToken`
@@ -148,12 +148,12 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
 > **This repository is public** (hackathon submission). All secrets must be kept
 > out of the codebase entirely. The following rules apply:
 
-- [ ] **GitHub Actions Secrets** — Configure the following repository secrets in GitHub (Settings → Secrets and variables → Actions). These are encrypted at rest, masked in logs, and never exposed in the public repo:
+- [x] **GitHub Actions Secrets** — Configure the following repository secrets in GitHub (Settings → Secrets and variables → Actions). These are encrypted at rest, masked in logs, and never exposed in the public repo:
   - `AWS_ACCESS_KEY_ID` — IAM user access key for CI/CD deployments
   - `AWS_SECRET_ACCESS_KEY` — IAM user secret key for CI/CD deployments
   - `AWS_REGION` — Target AWS region (e.g. `ap-south-1`)
   - `AWS_ACCOUNT_ID` — AWS account ID (used for Lambda function ARNs in deploy)
-- [ ] **AWS SSM Parameter Store** — All application secrets (OAuth tokens, DB credentials) live exclusively in AWS SSM as `SecureString`. They are never referenced in source code, environment variables, or Terraform state. Lambdas read them at runtime via the AWS SDK:
+- [x] **AWS SSM Parameter Store** — All application secrets (OAuth tokens, DB credentials) live exclusively in AWS SSM as `SecureString`. They are never referenced in source code, environment variables, or Terraform state. Lambdas read them at runtime via the AWS SDK:
   - `/insight-engine/{env}/twitter-client-id`
   - `/insight-engine/{env}/twitter-client-secret`
   - `/insight-engine/{env}/twitter-access-token`
@@ -163,52 +163,52 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
   - `/insight-engine/{env}/linkedin-access-token`
   - `/insight-engine/{env}/linkedin-refresh-token`
   - `/insight-engine/{env}/rds-connection-string`
-- [ ] **`.gitignore` enforcement** — The following files are gitignored and must never be committed:
+- [x] **`.gitignore` enforcement** — The following files are gitignored and must never be committed:
   - `terraform.tfvars` (real Terraform variable values)
   - `.env` / `.env.*` (local environment files)
   - `*.tfstate` / `*.tfstate.*` (Terraform state files contain resource details)
   - `.terraform/` (Terraform provider cache)
-- [ ] **Only example/placeholder files are committed:**
+- [x] **Only example/placeholder files are committed:**
   - `terraform.tfvars.example` — placeholder values, no real secrets
   - `.env.example` — documents required env vars without real values
   - `persona.example.json` — safe, contains no credentials
-- [ ] **Terraform SSM module** — The `infra/modules/ssm` module creates SSM parameter paths as empty placeholders only. Real secret values are set manually via the AWS CLI or Console after `terraform apply`, never by Terraform itself. This ensures secrets never appear in Terraform state or plan output.
-- [ ] **RDS credentials** — The RDS master password is set via a Terraform variable that reads from a `TF_VAR_rds_master_password` environment variable on the operator's machine (or GitHub Actions Secret for CI). It is never hardcoded in `.tf` files or committed to the repo.
+- [x] **Terraform SSM module** — The `infra/modules/ssm` module creates SSM parameter paths as empty placeholders only. Real secret values are set manually via the AWS CLI or Console after `terraform apply`, never by Terraform itself. This ensures secrets never appear in Terraform state or plan output.
+- [x] **RDS credentials** — The RDS master password is set via a Terraform variable that reads from a `TF_VAR_rds_master_password` environment variable on the operator's machine (or GitHub Actions Secret for CI). It is never hardcoded in `.tf` files or committed to the repo.
 
 ### 1.6 — CI/CD Pipelines
 
-- [ ] `ci.yml`: triggers on every PR → runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `terraform validate` + `terraform plan` (plan output posted as PR comment). AWS credentials are injected from GitHub Actions Secrets using `aws-actions/configure-aws-credentials`. Terraform plan output must be reviewed to ensure no secrets are leaked in resource attributes.
-- [ ] `deploy.yml`: triggers on merge to `main` → builds each Lambda package, zips the output, uploads to the `lambda-deployments` S3 bucket, runs `aws lambda update-function-code` for each function. AWS credentials are injected from GitHub Actions Secrets — never hardcoded in the workflow YAML. Terraform `apply` is a separate manual or environment-gated step.
+- [x] `ci.yml`: triggers on every PR → runs `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `terraform validate` + `terraform plan` (plan output posted as PR comment). AWS credentials are injected from GitHub Actions Secrets using `aws-actions/configure-aws-credentials`. Terraform plan output must be reviewed to ensure no secrets are leaked in resource attributes.
+- [x] `deploy.yml`: triggers on merge to `main` → builds each Lambda package, zips the output, uploads to the `lambda-deployments` S3 bucket, runs `aws lambda update-function-code` for each function. AWS credentials are injected from GitHub Actions Secrets — never hardcoded in the workflow YAML. Terraform `apply` is a separate manual or environment-gated step.
 
 ### 1.7 — Cost Control & AWS Teardown Scripts
 
 > **Estimated idle cost with Phase 1 defaults:** ~$0-3/month (DynamoDB, SQS, Lambda, API Gateway, Cognito, EventBridge all have generous free tiers or charge per-request only). The only potential fixed cost is CloudWatch Dashboard (~$3/month if enabled).
 
-- [ ] **`scripts/teardown.sh`** — Runs `terraform destroy` with environment argument and safety confirmation prompts. Usage: `./scripts/teardown.sh dev`. Extra confirmation required for `prod`.
-- [ ] **`scripts/pause.sh`** — Disables EventBridge scheduled rules (stops Watchtower and digest Lambda invocations). When RDS is enabled (Phase 8+), also stops the RDS instance. Usage: `./scripts/pause.sh dev` or `./scripts/pause.sh dev --full` (full also removes NAT Gateway if VPC is enabled).
-- [ ] **`scripts/resume.sh`** — Re-enables EventBridge rules. When RDS is enabled, starts the RDS instance. If NAT Gateway was removed, runs a targeted `terraform apply` to recreate it. Usage: `./scripts/resume.sh dev`.
-- [ ] **Cost-control toggle variables** in `infra/variables.tf`:
+- [x] **`scripts/teardown.sh`** — Runs `terraform destroy` with environment argument and safety confirmation prompts. Usage: `./scripts/teardown.sh dev`. Extra confirmation required for `prod`.
+- [x] **`scripts/pause.sh`** — Disables EventBridge scheduled rules (stops Watchtower and digest Lambda invocations). When RDS is enabled (Phase 8+), also stops the RDS instance. Usage: `./scripts/pause.sh dev` or `./scripts/pause.sh dev --full` (full also removes NAT Gateway if VPC is enabled).
+- [x] **`scripts/resume.sh`** — Re-enables EventBridge rules. When RDS is enabled, starts the RDS instance. If NAT Gateway was removed, runs a targeted `terraform apply` to recreate it. Usage: `./scripts/resume.sh dev`.
+- [x] **Cost-control toggle variables** in `infra/variables.tf`:
   - `enable_vpc` (default `false`) — skips VPC, NAT Gateway, subnets (~$32/month saved)
   - `enable_rds` (default `false`) — skips RDS PostgreSQL instance (~$12-15/month saved)
   - `enable_cloudwatch_dashboard` (default `true`) — skips CloudWatch Dashboard (~$3/month saved)
   - These toggles use `count` conditionals in the respective Terraform modules
-- [ ] **Phase 8 upgrade path:** When RDS/history features are needed, set `enable_vpc = true` and `enable_rds = true` in `terraform.tfvars` and run `terraform apply`. All module wiring is pre-built; only the resources themselves are conditionally created.
+- [x] **Phase 8 upgrade path:** When RDS/history features are needed, set `enable_vpc = true` and `enable_rds = true` in `terraform.tfvars` and run `terraform apply`. All module wiring is pre-built; only the resources themselves are conditionally created.
 
 > **Note:** AWS auto-starts stopped RDS instances after 7 days. If using pause/resume with RDS, re-run `pause.sh` weekly or use `terraform destroy` for extended idle periods.
 
 ### Validation — Phase 1
 
-- [ ] `pnpm -r build` compiles all packages with zero TypeScript errors
-- [ ] `pnpm -r lint` passes with zero warnings
-- [ ] `terraform init` completes; state is confirmed stored in the remote S3 bucket
-- [ ] `terraform validate` passes on the full `infra/` directory
-- [ ] `terraform plan` produces a valid plan showing all resources; zero errors
-- [ ] `terraform apply` (dev environment) completes; all DynamoDB tables, SQS queues, S3 buckets, Lambda shells, and API Gateway are visible in the AWS console (VPC and RDS are skipped by default; CloudWatch Dashboard is optional)
-- [ ] Config loader unit test: valid config object is returned; removing a required env var throws an error naming exactly which variable is missing
-- [ ] `terraform destroy` cleanly removes all resources with no orphaned dependencies
-- [ ] `scripts/teardown.sh dev` prompts for confirmation and runs `terraform destroy` successfully
-- [ ] `scripts/pause.sh dev` disables all EventBridge rules; Lambda invocations stop
-- [ ] `scripts/resume.sh dev` re-enables EventBridge rules; scheduled Lambda invocations resume
+- [x] `pnpm -r build` compiles all packages with zero TypeScript errors
+- [x] `pnpm -r lint` passes with zero warnings
+- [x] `terraform init` completes; state is confirmed stored in the remote S3 bucket
+- [x] `terraform validate` passes on the full `infra/` directory
+- [x] `terraform plan` produces a valid plan showing all resources; zero errors
+- [x] `terraform apply` (dev environment) completes; all DynamoDB tables, SQS queues, S3 buckets, Lambda shells, and API Gateway are visible in the AWS console (VPC and RDS are skipped by default; CloudWatch Dashboard is optional)
+- [x] Config loader unit test: valid config object is returned; removing a required env var throws an error naming exactly which variable is missing
+- [x] `terraform destroy` cleanly removes all resources with no orphaned dependencies
+- [x] `scripts/teardown.sh dev` prompts for confirmation and runs `terraform destroy` successfully
+- [x] `scripts/pause.sh dev` disables all EventBridge rules; Lambda invocations stop
+- [x] `scripts/resume.sh dev` re-enables EventBridge rules; scheduled Lambda invocations resume
 
 ---
 
@@ -218,7 +218,7 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
 
 ### Todos
 
-- [ ] Design the `PersonaFile` JSON schema with all required fields:
+- [x] Design the `PersonaFile` JSON schema with all required fields:
   ```json
   {
     "tone": "formal | casual | technical | humorous",
@@ -234,18 +234,18 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
     "monitoring_interval": "hourly | every-6h | daily"
   }
   ```
-- [ ] Implement schema validation using `zod` in `packages/core`; every field has a descriptive error message
-- [ ] Write a `loadPersona(source: 'S3' | 'local', path: string)` function: fetches the file, parses JSON, runs zod validation, returns a typed `PersonaFile`
-- [ ] Create `persona.example.json` at repo root as the starter reference file
-- [ ] Add Terraform resource in `infra/modules/s3` to upload `persona.example.json` to the persona bucket on `terraform apply`
-- [ ] Unit tests: valid persona → typed object returned; missing `tone` → zod error names the field; invalid `relevance_threshold` (> 100) → zod error with range message; invalid platform enum → zod error
+- [x] Implement schema validation using `zod` in `packages/core`; every field has a descriptive error message
+- [x] Write a `loadPersona(source: 'S3' | 'local', path: string)` function: fetches the file, parses JSON, runs zod validation, returns a typed `PersonaFile`
+- [x] Create `persona.example.json` at repo root as the starter reference file
+- [x] Add Terraform resource in `infra/modules/s3` to upload `persona.example.json` to the persona bucket on `terraform apply`
+- [x] Unit tests: valid persona → typed object returned; missing `tone` → zod error names the field; invalid `relevance_threshold` (> 100) → zod error with range message; invalid platform enum → zod error
 
 ### Validation — Phase 2
 
-- [ ] Load `persona.example.json` from disk → no errors, typed `PersonaFile` object returned with correct field values
-- [ ] Delete the `tone` field → loader throws with message referencing `tone` specifically
-- [ ] Set `relevance_threshold: 150` → loader throws with a range validation message
-- [ ] All 4 unit tests pass in CI
+- [x] Load `persona.example.json` from disk → no errors, typed `PersonaFile` object returned with correct field values
+- [x] Delete the `tone` field → loader throws with message referencing `tone` specifically
+- [x] Set `relevance_threshold: 150` → loader throws with a range validation message
+- [x] All 4 unit tests pass in CI
 
 ---
 
@@ -255,25 +255,25 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
 
 ### Todos
 
-- [ ] Implement `packages/watchtower` Lambda handler with three source monitors:
+- [x] Implement `packages/watchtower` Lambda handler with three source monitors:
   - **RSS**: use `rss-parser`; fetch from a configurable list of feed URLs stored in the persona file or SSM; extract `title`, `author`, `publicationDate`, `sourceUrl`, `summary`
   - **arXiv**: call `http://export.arxiv.org/api/query` with configurable `categories` and `max_results`; parse Atom XML into `ContentItem` shape using `fast-xml-parser`
   - **Twitter/X**: use Twitter API v2 search endpoint; search for terms derived from `persona.expertise_topics`; extract tweet text, author, and URL
-- [ ] Wrap each source monitor in an independent `try/catch`; on failure log `{ component: 'Watchtower', source, error }` and continue to the next source — a single broken feed must never crash the Lambda
-- [ ] Implement deduplication: before storing, query DynamoDB `ContentItems` GSI on `sourceUrl`; if a match exists set `isDuplicate: true` and skip further processing
-- [ ] Persist each new `ContentItem` to DynamoDB with fields: `id` (UUID), `title`, `author`, `publicationDate`, `sourceUrl`, `fullText`, `source`, `ingestedAt`, `isDuplicate`
-- [ ] After storing, publish the `id` to SQS `ingestion-queue` for the Analyst to pick up
-- [ ] Add Terraform EventBridge rule in `infra/modules/eventbridge` targeting this Lambda on the configured `monitoring_interval`
-- [ ] Unit tests: RSS parser produces correct `ContentItem` shape; arXiv parser handles multi-author entries; dedup logic returns `isDuplicate: true` for a known URL; SQS publish is called after storage
-- [ ] Integration test against the arXiv public API with a known category (e.g. `cs.AI`)
+- [x] Wrap each source monitor in an independent `try/catch`; on failure log `{ component: 'Watchtower', source, error }` and continue to the next source — a single broken feed must never crash the Lambda
+- [x] Implement deduplication: before storing, query DynamoDB `ContentItems` GSI on `sourceUrl`; if a match exists set `isDuplicate: true` and skip further processing
+- [x] Persist each new `ContentItem` to DynamoDB with fields: `id` (UUID), `title`, `author`, `publicationDate`, `sourceUrl`, `fullText`, `source`, `ingestedAt`, `isDuplicate`
+- [x] After storing, publish the `id` to SQS `ingestion-queue` for the Analyst to pick up
+- [x] Add Terraform EventBridge rule in `infra/modules/eventbridge` targeting this Lambda on the configured `monitoring_interval`
+- [x] Unit tests: RSS parser produces correct `ContentItem` shape; arXiv parser handles multi-author entries; dedup logic returns `isDuplicate: true` for a known URL; SQS publish is called after storage
+- [x] Integration test against the arXiv public API with a known category (e.g. `cs.AI`)
 
 ### Validation — Phase 3
 
-- [ ] Invoke the Watchtower Lambda manually from the AWS console → at least one `ContentItem` record appears in DynamoDB within 30 seconds
-- [ ] At least one item `id` appears in the `ingestion-queue` SQS queue
-- [ ] Introduce an invalid RSS URL in config → Lambda logs the error for that source and still processes remaining sources; no Lambda crash; CloudWatch shows the error log entry
-- [ ] Invoke the Lambda twice with the same sources → second run produces no new DynamoDB records; duplicate items have `isDuplicate: true`
-- [ ] All unit tests pass; integration test returns at least one parsed arXiv item
+- [x] Invoke the Watchtower Lambda manually from the AWS console → at least one `ContentItem` record appears in DynamoDB within 30 seconds
+- [x] At least one item `id` appears in the `ingestion-queue` SQS queue
+- [x] Introduce an invalid RSS URL in config → Lambda logs the error for that source and still processes remaining sources; no Lambda crash; CloudWatch shows the error log entry
+- [x] Invoke the Lambda twice with the same sources → second run produces no new DynamoDB records; duplicate items have `isDuplicate: true`
+- [x] All unit tests pass; integration test returns at least one parsed arXiv item
 
 ---
 
@@ -283,38 +283,38 @@ Write a Terraform module for each concern below. Each module lives in `infra/mod
 
 ### Todos
 
-- [ ] Implement `packages/analyst` as an SQS-triggered Lambda (batch size 1 for predictable error handling):
+- [x] Implement `packages/analyst` as an SQS-triggered Lambda (batch size 1 for predictable error handling):
   - Read `contentItemId` from the SQS message
   - Fetch the `ContentItem` from DynamoDB
   - Load the `PersonaFile` from S3
 
-- [ ] Implement scoring via AWS Bedrock (Claude Sonnet via `@aws-sdk/client-bedrock-runtime`):
+- [x] Implement scoring via AWS Bedrock (Claude Sonnet via `@aws-sdk/client-bedrock-runtime`):
   - Construct a prompt that provides the article summary, the persona's `expertise_topics`, and asks for a score 0–100 with reasoning
   - Apply recency decay: items older than 72 hours have their raw score multiplied by `0.7`
   - Parse the integer score from the model response with a fallback to 0 on parse failure
   - On any Bedrock API error: log the error, set score to 0, do not generate a hot take
 
-- [ ] Implement threshold filter: if `score < persona.relevance_threshold`, update DynamoDB item with `relevanceScore` and `status: 'filtered'`; do not proceed to hot take generation
+- [x] Implement threshold filter: if `score < persona.relevance_threshold`, update DynamoDB item with `relevanceScore` and `status: 'filtered'`; do not proceed to hot take generation
 
-- [ ] Implement trend detection: query the last 48 hours of `ContentItems` from DynamoDB; cluster by topic overlap with the current item; if 3 or more recent items share the same topic cluster, set `isTrending: true` on the current item
+- [x] Implement trend detection: query the last 48 hours of `ContentItems` from DynamoDB; cluster by topic overlap with the current item; if 3 or more recent items share the same topic cluster, set `isTrending: true` on the current item
 
-- [ ] Implement `HotTake` generation via Bedrock for items that pass the threshold:
+- [x] Implement `HotTake` generation via Bedrock for items that pass the threshold:
   - Prompt includes: persona tone, expertise, heroes/enemies list, article summary
   - Request exactly 2 variations in a single structured prompt (JSON array response)
   - Validate each variation is between 50–300 words; if not, re-prompt once with a corrective instruction specifying the required word count
   - Store each variation as a separate `HotTake` record in DynamoDB with `id`, `contentItemId`, `text`, `wordCount`, `variationIndex`, `createdAt`
 
-- [ ] After storing `HotTake` records, publish each `hotTakeId` to SQS `generation-queue` for the Ghostwriter
+- [x] After storing `HotTake` records, publish each `hotTakeId` to SQS `generation-queue` for the Ghostwriter
 
-- [ ] Unit tests: scoring prompt construction; recency decay calculation; threshold filter logic; word count validation; variation re-prompt logic; error → score 0 behaviour
+- [x] Unit tests: scoring prompt construction; recency decay calculation; threshold filter logic; word count validation; variation re-prompt logic; error → score 0 behaviour
 
 ### Validation — Phase 4
 
-- [ ] Post a `ContentItem` ID to the `ingestion-queue` for a clearly on-topic article → two `HotTake` records appear in DynamoDB; both have `wordCount` between 50 and 300
-- [ ] Both `hotTakeId` values appear in the `generation-queue` SQS queue
-- [ ] Post an item clearly outside the persona's topics → `relevanceScore` is below threshold; no `HotTake` records created; DynamoDB item shows `status: 'filtered'`
-- [ ] Mock Bedrock to return a 500 error → `relevanceScore` is 0 in DynamoDB; CloudWatch log shows `component: 'Analyst'`, `level: 'error'`; Lambda does not crash; SQS message is not retried to DLQ
-- [ ] Insert 3 items with overlapping topics into DynamoDB (backdated within 48h) then process a 4th matching item → 4th item has `isTrending: true`
+- [x] Post a `ContentItem` ID to the `ingestion-queue` for a clearly on-topic article → two `HotTake` records appear in DynamoDB; both have `wordCount` between 50 and 300
+- [x] Both `hotTakeId` values appear in the `generation-queue` SQS queue
+- [x] Post an item clearly outside the persona's topics → `relevanceScore` is below threshold; no `HotTake` records created; DynamoDB item shows `status: 'filtered'`
+- [x] Mock Bedrock to return a 500 error → `relevanceScore` is 0 in DynamoDB; CloudWatch log shows `component: 'Analyst'`, `level: 'error'`; Lambda does not crash; SQS message is not retried to DLQ
+- [x] Insert 3 items with overlapping topics into DynamoDB (backdated within 48h) then process a 4th matching item → 4th item has `isTrending: true`
 
 ---
 
