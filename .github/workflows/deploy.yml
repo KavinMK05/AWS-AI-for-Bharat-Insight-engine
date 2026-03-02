@@ -3,6 +3,9 @@ name: Deploy
 on:
   push:
     branches: [main]
+    # 1. Only trigger when files inside the 'code' folder change
+    paths:
+      - 'code/**'
 
 permissions:
   contents: read
@@ -11,6 +14,11 @@ jobs:
   deploy:
     name: Build & Deploy Lambdas
     runs-on: ubuntu-latest
+
+    # 2. Automatically run all scripts inside the 'code' directory
+    defaults:
+      run:
+        working-directory: ./code
 
     steps:
       - name: Checkout
@@ -26,6 +34,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          # 3. Point the cache exactly to where your lockfile lives
+          cache-dependency-path: code/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -40,6 +50,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Your deployment script stays exactly the same! 
+      # Because of the 'defaults' setting above, it acts exactly as if it were in the code folder.
       - name: Deploy Lambda functions
         env:
           ENVIRONMENT: dev

@@ -3,6 +3,9 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    # 1. Trigger only when files in the nested folder change
+    paths:
+      - 'code/**'
 
 permissions:
   contents: read
@@ -12,6 +15,10 @@ jobs:
   lint-typecheck-test:
     name: Lint, Typecheck, Test
     runs-on: ubuntu-latest
+    # 2. Set the working directory for all run steps in this job
+    defaults:
+      run:
+        working-directory: ./code
 
     steps:
       - name: Checkout
@@ -27,6 +34,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          # 3. Explicitly point to the nested lockfile for caching
+          cache-dependency-path: code/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -45,7 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: infra
+        # 4. Update the path to the nested infra directory
+        working-directory: code/infra
 
     steps:
       - name: Checkout
@@ -80,9 +90,7 @@ jobs:
         with:
           script: |
             const output = `#### Terraform Plan
-            \`\`\`
-            ${{ steps.plan.outputs.stdout }}
-            \`\`\`
+            \`\`\`\n${{ steps.plan.outputs.stdout }}\n\`\`\`
             *Review this plan carefully to ensure no secrets are leaked in resource attributes.*`;
 
             github.rest.issues.createComment({
