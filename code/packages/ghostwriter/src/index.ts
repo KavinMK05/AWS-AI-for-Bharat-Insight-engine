@@ -1,3 +1,2 @@
 // @insight-engine/ghostwriter — Content Generation Lambda
-// Implementation in Phase 5
-export {};
+export { handler } from './handler.js';

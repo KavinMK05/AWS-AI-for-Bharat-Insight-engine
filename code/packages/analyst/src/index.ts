@@ -1,3 +1,5 @@
 // @insight-engine/analyst — Scoring + Hot Take Lambda
-// Implementation in Phase 4
-export {};
+// Phase 4: SQS-triggered Lambda that scores content items against
+// the persona and generates hot takes for high-scoring items.
+
+export { handler } from './handler.js';
