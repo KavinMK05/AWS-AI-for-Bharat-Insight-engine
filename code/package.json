@@ -5,6 +5,7 @@
   "description": "Event-driven AI content pipeline built on AWS",
   "scripts": {
     "build": "pnpm -r build",
+    "build:lambda": "node scripts/build-lambda.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "pnpm -r typecheck",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
+    "esbuild": "^0.24.0",
     "eslint": "^9.16.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",

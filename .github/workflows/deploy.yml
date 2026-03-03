@@ -39,8 +39,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build all packages
-        run: pnpm -r build
+      - name: Build Lambda packages
+        run: pnpm build:lambda
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -56,7 +56,6 @@ jobs:
           ENVIRONMENT: dev
           S3_BUCKET: insight-engine-dev-lambda-deployments
         run: |
-          # Create dist directory if it doesn't exist
           mkdir -p dist
           
           PACKAGES=("watchtower" "analyst" "ghostwriter" "gatekeeper" "publisher")
@@ -64,35 +63,14 @@ jobs:
           for PKG in "${PACKAGES[@]}"; do
             echo "Deploying ${PKG}..."
 
-            # Create a temporary deployment directory
             cd packages/${PKG}
-            rm -rf deploy
-            mkdir -p deploy
             
-            # Copy the built output
-            cp -r dist/* deploy/
+            zip -r "../../dist/${PKG}.zip" dist/
             
-            # Copy package.json
-            cp package.json deploy/
-            
-            # Copy pnpm-lock.yaml from root
-            cp ../../pnpm-lock.yaml deploy/
-            
-            # Install all dependencies including peer dependencies in the deploy directory
-            cd deploy
-            pnpm install --prod --frozen-lockfile
-            rm pnpm-lock.yaml
-            cd ..
-            
-            # Create the zip with files at the root (not in a subdirectory)
-            cd deploy
-            zip -r "../../../dist/${PKG}.zip" .
-            cd ../../..
+            cd ../..
 
-            # Upload to S3
             aws s3 cp "dist/${PKG}.zip" "s3://${S3_BUCKET}/${PKG}.zip"
 
-            # Update Lambda function code
             aws lambda update-function-code \
               --function-name "insight-engine-${ENVIRONMENT}-${PKG}" \
               --s3-bucket "${S3_BUCKET}" \
