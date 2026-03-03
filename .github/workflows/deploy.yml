@@ -64,11 +64,27 @@ jobs:
           for PKG in "${PACKAGES[@]}"; do
             echo "Deploying ${PKG}..."
 
-            # Create zip from built output
+            # Create a temporary deployment directory
             cd packages/${PKG}
-            zip -r "../../dist/${PKG}.zip" dist/ package.json node_modules/
+            rm -rf deploy
+            mkdir -p deploy
+            
+            # Copy the built output
+            cp -r dist deploy/
+            
+            # Copy package.json
+            cp package.json deploy/
+            
+            # Install all dependencies including peer dependencies in the deploy directory
+            cd deploy
+            pnpm install --prod --frozen-lockfile
+            cd ..
+            
+            # Create the zip
+            cd deploy
+            zip -r "../../dist/${PKG}.zip" .
             cd ../..
-
+            
             # Upload to S3
             aws s3 cp "dist/${PKG}.zip" "s3://${S3_BUCKET}/${PKG}.zip"
 
