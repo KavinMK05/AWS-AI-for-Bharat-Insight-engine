@@ -138,7 +138,7 @@ export async function scoreContent(
     const response = await bedrockClient.send(command);
 
     const responseText =
-      response.output?.message?.content?.[0]?.text ?? '';
+      response.output?.message?.content?.[1]?.text ?? '';
 
     const { score: rawScore, reasoning } = parseScoreResponse(responseText);
     const { score, recencyDecayApplied } = applyRecencyDecay(rawScore, item.publicationDate);
