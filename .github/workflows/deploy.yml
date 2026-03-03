@@ -87,7 +87,7 @@ jobs:
             # Create the zip with files at the root (not in a subdirectory)
             cd deploy
             zip -r "../../../dist/${PKG}.zip" .
-            cd ../..
+            cd ../../..
 
             # Upload to S3
             aws s3 cp "dist/${PKG}.zip" "s3://${S3_BUCKET}/${PKG}.zip"
