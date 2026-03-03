@@ -146,6 +146,7 @@ export async function scoreContent(
     logger.info('Scored content item', {
       contentItemId: item.id,
       rawScore,
+      response,
       finalScore: score,
       recencyDecayApplied: String(recencyDecayApplied),
     });
