@@ -13,7 +13,7 @@ import type { ContentItem, PersonaFile, RelevanceScore } from '@insight-engine/c
 const logger = createLogger('Analyst');
 
 /** Bedrock model ID for MiniMax M2 */
-export const SCORING_MODEL_ID = 'minimax.minimax-m2';
+export const SCORING_MODEL_ID = 'openai.gpt-oss-safeguard-120b';
 
 /** Items older than this (in ms) receive a recency decay penalty */
 const RECENCY_DECAY_THRESHOLD_MS = 72 * 60 * 60 * 1000; // 72 hours

@@ -14,7 +14,7 @@ import type { ContentItem, PersonaFile, HotTake } from '@insight-engine/core';
 const logger = createLogger('Ghostwriter');
 
 /** Bedrock model ID — MiniMax M2 */
-export const MODEL_ID = 'minimax.minimax-m2';
+export const MODEL_ID = 'openai.gpt-oss-safeguard-120b';
 
 /** Maximum characters per tweet */
 const MAX_TWEET_LENGTH = 280;
