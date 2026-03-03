@@ -114,7 +114,7 @@ module "lambda_watchtower" {
     ENVIRONMENT          = var.environment
     INGESTION_QUEUE_URL  = module.sqs.queue_urls["ingestion"]
     PERSONA_FILES_BUCKET = module.s3.bucket_names["persona_files"]
-    TABLE_PREFIX         = "${var.environment}-"
+    TABLE_PREFIX         = "${local.prefix}-"
     RSS_FEED_URLS        = var.rss_feed_urls
     ARXIV_CATEGORIES     = var.arxiv_categories
     ARXIV_MAX_RESULTS    = var.arxiv_max_results
@@ -136,7 +136,7 @@ module "lambda_analyst" {
     ENVIRONMENT          = var.environment
     GENERATION_QUEUE_URL = module.sqs.queue_urls["generation"]
     PERSONA_FILES_BUCKET = module.s3.bucket_names["persona_files"]
-    TABLE_PREFIX         = "${var.environment}-"
+    TABLE_PREFIX         = "${local.prefix}-"
     RELEVANCE_THRESHOLD  = tostring(var.relevance_threshold)
   }
   iam_policy_arns = [
@@ -156,7 +156,7 @@ module "lambda_ghostwriter" {
   environment_variables = {
     ENVIRONMENT          = var.environment
     PERSONA_FILES_BUCKET = module.s3.bucket_names["persona_files"]
-    TABLE_PREFIX         = "${var.environment}-"
+    TABLE_PREFIX         = "${local.prefix}-"
   }
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,
@@ -174,7 +174,7 @@ module "lambda_gatekeeper" {
   environment_variables = {
     ENVIRONMENT         = var.environment
     PUBLISH_QUEUE_URL   = module.sqs.queue_urls["publish"]
-    TABLE_PREFIX        = "${var.environment}-"
+    TABLE_PREFIX        = "${local.prefix}-"
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
   }
   iam_policy_arns = [
@@ -191,7 +191,7 @@ module "lambda_publisher" {
   runtime       = "nodejs20.x"
   environment_variables = {
     ENVIRONMENT            = var.environment
-    TABLE_PREFIX           = "${var.environment}-"
+    TABLE_PREFIX           = "${local.prefix}-"
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
   }
   iam_policy_arns = [
@@ -211,6 +211,7 @@ module "api_gateway" {
   gatekeeper_lambda_arn = module.lambda_gatekeeper.function_arn
   gatekeeper_invoke_arn = module.lambda_gatekeeper.invoke_arn
   cognito_user_pool_arn = module.cognito.user_pool_arn
+  cognito_client_id     = module.cognito.client_id
 }
 
 # --- CloudWatch ---

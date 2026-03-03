@@ -13,8 +13,8 @@ import type { ContentItem, PersonaFile, HotTake } from '@insight-engine/core';
 
 const logger = createLogger('Ghostwriter');
 
-/** Bedrock model ID — same as Analyst for consistency */
-export const MODEL_ID = 'moonshotai.kimi-k2.5';
+/** Bedrock model ID — MiniMax M2 */
+export const MODEL_ID = 'minimax.minimax-m2';
 
 /** Maximum characters per tweet */
 const MAX_TWEET_LENGTH = 280;

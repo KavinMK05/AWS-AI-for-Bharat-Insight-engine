@@ -7,23 +7,39 @@ import type { ApprovalDigest } from './types';
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] ?? '';
 
 /**
- * Retrieve the auth token from localStorage (set after Cognito login).
- * For local development/testing, you can also set NEXT_PUBLIC_AUTH_TOKEN
- * in .env.local to bypass Cognito entirely.
+ * Get the Cognito ID token from the current session.
+ * This works by checking the Cognito storage in localStorage.
  */
-function getAuthToken(): string | null {
-  // Check env var first (useful for local dev/testing without Cognito)
+function getCognitoIdToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  // Check for env var first (useful for local dev/testing without Cognito)
   const envToken = process.env['NEXT_PUBLIC_AUTH_TOKEN'];
   if (envToken) {
     return envToken;
   }
 
-  // Check localStorage (set by Cognito login flow)
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('insight_engine_token');
+  // Try to get the last authenticated user from Cognito
+  const userPoolId = process.env['NEXT_PUBLIC_COGNITO_USER_POOL_ID'];
+  if (!userPoolId) {
+    return null;
   }
 
-  return null;
+  // Cognito stores the user key in localStorage
+  const cognitoUserKey = `CognitoIdentityServiceProvider.${process.env['NEXT_PUBLIC_COGNITO_CLIENT_ID']}.LastAuthUser`;
+  const lastAuthUser = localStorage.getItem(cognitoUserKey);
+
+  if (!lastAuthUser) {
+    return null;
+  }
+
+  // Get the ID token from the user's data
+  const idTokenKey = `CognitoIdentityServiceProvider.${process.env['NEXT_PUBLIC_COGNITO_CLIENT_ID']}.${lastAuthUser}.idToken`;
+  const idToken = localStorage.getItem(idTokenKey);
+
+  return idToken;
 }
 
 async function apiFetch<T>(
@@ -31,7 +47,7 @@ async function apiFetch<T>(
   options?: RequestInit,
 ): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
-  const token = getAuthToken();
+  const token = getCognitoIdToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -51,7 +67,9 @@ async function apiFetch<T>(
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(
-      (errorBody as { error?: string }).error ?? `API error: ${res.status}`,
+      (errorBody as { error?: string; message?: string }).error ??
+      (errorBody as { error?: string; message?: string }).message ??
+      `API error: ${res.status}`,
     );
   }
 
@@ -101,19 +119,8 @@ export async function editAndApproveDraft(
 }
 
 /**
- * Store a JWT token (e.g. from Cognito login) for API requests.
+ * Check if the user is authenticated (has a valid token).
  */
-export function setAuthToken(token: string): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('insight_engine_token', token);
-  }
-}
-
-/**
- * Clear the stored auth token (logout).
- */
-export function clearAuthToken(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('insight_engine_token');
-  }
+export function isAuthenticated(): boolean {
+  return getCognitoIdToken() !== null;
 }

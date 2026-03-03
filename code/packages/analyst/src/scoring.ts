@@ -1,6 +1,6 @@
 // ============================================================================
 // Scoring — Bedrock-based relevance scoring with recency decay
-// Uses Kimi K2.5 (moonshotai.kimi-k2.5) via the Bedrock Converse API.
+// Uses Claude 3.5 Sonnet via the Bedrock Converse API.
 // ============================================================================
 
 import {
@@ -12,8 +12,8 @@ import type { ContentItem, PersonaFile, RelevanceScore } from '@insight-engine/c
 
 const logger = createLogger('Analyst');
 
-/** Bedrock model ID for Kimi K2.5 */
-export const SCORING_MODEL_ID = 'moonshotai.kimi-k2.5';
+/** Bedrock model ID for MiniMax M2 */
+export const SCORING_MODEL_ID = 'minimax.minimax-m2';
 
 /** Items older than this (in ms) receive a recency decay penalty */
 const RECENCY_DECAY_THRESHOLD_MS = 72 * 60 * 60 * 1000; // 72 hours

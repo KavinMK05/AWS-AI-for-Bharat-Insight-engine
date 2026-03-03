@@ -2,7 +2,9 @@
 // /history — Stub placeholder for Phase 8 (searchable history table)
 // ============================================================================
 
-export default function HistoryPage() {
+import { AuthGuard } from '@/components/auth-guard';
+
+function HistoryContent() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-[var(--color-text)] mb-2">
@@ -23,5 +25,13 @@ export default function HistoryPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <AuthGuard>
+      <HistoryContent />
+    </AuthGuard>
   );
 }

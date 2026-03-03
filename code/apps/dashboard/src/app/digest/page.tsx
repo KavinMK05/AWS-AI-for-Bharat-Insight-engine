@@ -9,8 +9,9 @@ import type { ApprovalDigest } from '@/lib/types';
 import { fetchDigest } from '@/lib/api';
 import { DigestCard } from '@/components/digest-card';
 import { Toast, useToast } from '@/components/toast';
+import { AuthGuard } from '@/components/auth-guard';
 
-export default function DigestPage() {
+function DigestContent() {
   const [digests, setDigests] = useState<ApprovalDigest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,5 +105,13 @@ export default function DigestPage() {
         />
       ))}
     </div>
+  );
+}
+
+export default function DigestPage() {
+  return (
+    <AuthGuard>
+      <DigestContent />
+    </AuthGuard>
   );
 }

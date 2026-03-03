@@ -14,8 +14,9 @@ import { LinkedInPreview } from '@/components/linkedin-preview';
 import { ApprovalActions } from '@/components/approval-actions';
 import { PlatformBadge, StatusBadge } from '@/components/status-badge';
 import { Toast, useToast } from '@/components/toast';
+import { AuthGuard } from '@/components/auth-guard';
 
-export default function DigestDetailPage() {
+function DigestDetailContent() {
   const params = useParams();
   const router = useRouter();
   const contentItemId = params.contentItemId as string;
@@ -208,6 +209,14 @@ export default function DigestDetailPage() {
         />
       ))}
     </div>
+  );
+}
+
+export default function DigestDetailPage() {
+  return (
+    <AuthGuard>
+      <DigestDetailContent />
+    </AuthGuard>
   );
 }
 

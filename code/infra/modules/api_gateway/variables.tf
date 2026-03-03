@@ -13,3 +13,6 @@ variable "gatekeeper_invoke_arn" {
 variable "cognito_user_pool_arn" {
   type = string
 }
+variable "cognito_client_id" {
+  type = string
+}
