@@ -70,7 +70,7 @@ jobs:
             mkdir -p deploy
             
             # Copy the built output
-            cp -r dist deploy/
+            cp -r dist/* deploy/
             
             # Copy package.json
             cp package.json deploy/
@@ -84,8 +84,9 @@ jobs:
             rm pnpm-lock.yaml
             cd ..
             
-            # Create the zip from the parent directory
-            zip -r "../../dist/${PKG}.zip" deploy/
+            # Create the zip with files at the root (not in a subdirectory)
+            cd deploy
+            zip -r "../../../dist/${PKG}.zip" .
             cd ../..
 
             # Upload to S3
