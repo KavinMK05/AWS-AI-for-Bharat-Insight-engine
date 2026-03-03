@@ -4,6 +4,15 @@ const fs = require('fs');
 
 const LAMBDA_PACKAGES = ['watchtower', 'analyst', 'ghostwriter', 'gatekeeper', 'publisher'];
 
+const workspacePlugin = {
+  name: 'workspace-resolver',
+  setup(build) {
+    build.onResolve({ filter: /^@insight-engine\/core$/ }, () => ({
+      path: path.join(__dirname, '..', 'packages', 'core', 'src', 'index.ts'),
+    }));
+  },
+};
+
 async function buildPackage(pkgName) {
   const pkgDir = path.join(__dirname, '..', 'packages', pkgName);
   const entryPoint = path.join(pkgDir, 'src', 'index.ts');
@@ -23,7 +32,7 @@ async function buildPackage(pkgName) {
     format: 'cjs',
     minify: false,
     sourcemap: true,
-    external: [],
+    plugins: [workspacePlugin],
   });
 
   console.log(`Built ${pkgName}`);
