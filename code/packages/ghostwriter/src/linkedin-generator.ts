@@ -129,7 +129,7 @@ async function callBedrock(
   });
 
   const response = await bedrockClient.send(command);
-  return response.output?.message?.content?.[0]?.text ?? '';
+  return response.output?.message?.content?.[1]?.text ?? '';
 }
 
 // ---------------------------------------------------------------------------
