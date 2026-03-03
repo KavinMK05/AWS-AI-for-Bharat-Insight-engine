@@ -75,15 +75,17 @@ jobs:
             # Copy package.json
             cp package.json deploy/
             
+            # Copy pnpm-lock.yaml from root
+            cp ../../../pnpm-lock.yaml deploy/
+            
             # Install all dependencies including peer dependencies in the deploy directory
             cd deploy
             pnpm install --prod --frozen-lockfile
+            rm pnpm-lock.yaml
             cd ..
             
-            # Create the zip
-            cd deploy
-            zip -r "../../dist/${PKG}.zip" .
-            cd ../..
+            # Create the zip from the parent directory
+            zip -r "../../dist/${PKG}.zip" deploy/
             
             # Upload to S3
             aws s3 cp "dist/${PKG}.zip" "s3://${S3_BUCKET}/${PKG}.zip"
