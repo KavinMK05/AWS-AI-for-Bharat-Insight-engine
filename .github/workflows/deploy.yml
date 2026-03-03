@@ -56,6 +56,9 @@ jobs:
           ENVIRONMENT: dev
           S3_BUCKET: insight-engine-dev-lambda-deployments
         run: |
+          # Create dist directory if it doesn't exist
+          mkdir -p dist
+          
           PACKAGES=("watchtower" "analyst" "ghostwriter" "gatekeeper" "publisher")
 
           for PKG in "${PACKAGES[@]}"; do
