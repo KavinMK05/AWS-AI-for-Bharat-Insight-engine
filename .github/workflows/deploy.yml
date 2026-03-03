@@ -76,7 +76,7 @@ jobs:
             cp package.json deploy/
             
             # Copy pnpm-lock.yaml from root
-            cp ../../../pnpm-lock.yaml deploy/
+            cp ../../pnpm-lock.yaml deploy/
             
             # Install all dependencies including peer dependencies in the deploy directory
             cd deploy
