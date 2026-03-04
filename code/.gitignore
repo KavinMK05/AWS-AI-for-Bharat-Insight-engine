@@ -33,6 +33,7 @@ out/
 *.tfstate.*
 *.tfstate.backup
 .terraform.lock.hcl
+*.tfvars
 terraform.tfvars
 !terraform.tfvars.example
 *.tfplan
