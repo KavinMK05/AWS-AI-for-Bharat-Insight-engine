@@ -4,6 +4,18 @@
 
 import type { ApprovalDigest } from './types';
 
+export interface SocialConnectionStatus {
+  connected: boolean;
+  platformUsername?: string;
+  connectedAt?: string;
+  expiresAt?: string;
+}
+
+export interface SocialStatusResponse {
+  twitter: SocialConnectionStatus;
+  linkedin: SocialConnectionStatus;
+}
+
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] ?? '';
 
 /**
@@ -123,4 +135,29 @@ export async function editAndApproveDraft(
  */
 export function isAuthenticated(): boolean {
   return getCognitoIdToken() !== null;
+}
+
+export async function fetchSocialStatus(): Promise<SocialStatusResponse> {
+  return apiFetch<SocialStatusResponse>('/api/social/status');
+}
+
+export async function connectTwitterAccount(payload: {
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+}): Promise<{ message: string; platformUsername?: string; expiresAt?: string }> {
+  return apiFetch('/api/social/connect/twitter', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function connectLinkedInAccount(payload: {
+  code: string;
+  redirectUri: string;
+}): Promise<{ message: string; platformUsername?: string; expiresAt?: string }> {
+  return apiFetch('/api/social/connect/linkedin', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

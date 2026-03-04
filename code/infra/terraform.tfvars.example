@@ -7,6 +7,7 @@ relevance_threshold    = 60
 digest_schedule        = "rate(1 day)"
 monitoring_interval    = "rate(1 hour)"
 admin_email            = "admin@example.com"
+linkedin_author_urn    = "urn:li:person:your-member-id"
 
 # Cost control toggles
 enable_vpc                  = false

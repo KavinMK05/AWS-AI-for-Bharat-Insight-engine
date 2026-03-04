@@ -89,6 +89,7 @@ resource "aws_iam_policy" "receive_message" {
       Action = [
         "sqs:ReceiveMessage",
         "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
         "sqs:GetQueueAttributes",
         "sqs:GetQueueUrl",
       ]

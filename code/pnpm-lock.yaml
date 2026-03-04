@@ -122,6 +122,9 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.700.0
         version: 3.1000.0
+      '@aws-sdk/client-ssm':
+        specifier: ^3.700.0
+        version: 3.1000.0
       '@insight-engine/core':
         specifier: workspace:*
         version: link:../core
@@ -157,10 +160,22 @@ importers:
 
   packages/publisher:
     dependencies:
+      '@aws-sdk/client-sns':
+        specifier: ^3.700.0
+        version: 3.1000.0
+      '@aws-sdk/client-sqs':
+        specifier: ^3.700.0
+        version: 3.1000.0
+      '@aws-sdk/client-ssm':
+        specifier: ^3.700.0
+        version: 3.1000.0
       '@insight-engine/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@types/node':
+        specifier: ^22.10.1
+        version: 22.19.13
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

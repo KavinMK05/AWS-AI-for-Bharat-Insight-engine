@@ -14,6 +14,7 @@ const mockQueryByIndex = vi.fn();
 const mockGetItem = vi.fn();
 const mockUpdateItem = vi.fn();
 const mockPutItem = vi.fn();
+const mockSendSSM = vi.fn();
 
 vi.mock('@insight-engine/core', () => ({
   createLogger: () => ({
@@ -34,6 +35,7 @@ vi.mock('@insight-engine/core', () => ({
     hotTakes: 'HotTakes',
     draftContent: 'DraftContent',
     publishingQueue: 'PublishingQueue',
+    socialConnections: 'SocialConnections',
     metrics: 'Metrics',
   },
 }));
@@ -45,6 +47,13 @@ vi.mock('@aws-sdk/client-sqs', () => ({
     send: mockSendSQS,
   })),
   SendMessageCommand: vi.fn().mockImplementation((input: unknown) => input),
+}));
+
+vi.mock('@aws-sdk/client-ssm', () => ({
+  SSMClient: vi.fn().mockImplementation(() => ({
+    send: mockSendSSM,
+  })),
+  GetParameterCommand: vi.fn().mockImplementation((input: unknown) => input),
 }));
 
 // ---------------------------------------------------------------------------
@@ -77,6 +86,13 @@ function makeEvent(
       stage: '$default',
       time: '2026-01-01T00:00:00Z',
       timeEpoch: 0,
+      authorizer: {
+        jwt: {
+          claims: {
+            sub: 'user-sub-123',
+          },
+        },
+      },
     },
     body,
     isBase64Encoded: false,

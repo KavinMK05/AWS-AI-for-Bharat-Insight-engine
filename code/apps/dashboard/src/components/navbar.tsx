@@ -37,6 +37,12 @@ export function Navbar() {
             >
               History
             </Link>
+            <Link
+              href="/settings"
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Settings
+            </Link>
           </div>
         )}
       </div>

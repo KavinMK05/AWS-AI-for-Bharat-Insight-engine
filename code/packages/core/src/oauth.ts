@@ -1,21 +1,10 @@
-// ============================================================================
-// OAuthTokenManager — Scaffold (Phase 1)
-//
-// Handles OAuth 2.0 token management for Twitter/X and LinkedIn:
-// - Loading tokens from SSM Parameter Store
-// - In-memory caching for warm Lambda invocations
-// - Token expiry detection with 5-minute buffer
-// - Refresh token flow (HTTP calls are TODOs — implemented in Phase 7)
-// - Writing refreshed tokens back to SSM
-// - SNS alerting on refresh failure
-//
-// IMPORTANT: Never log token values. Only log metadata (platform, expiry, etc.)
-// ============================================================================
+import { Buffer } from 'node:buffer';
 
-import { SSMClient, GetParameterCommand, PutParameterCommand } from '@aws-sdk/client-ssm';
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
-import type { OAuthTokenSet, Platform } from './types.js';
+import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
+import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+
 import { createLogger } from './logger.js';
+import type { OAuthTokenSet, Platform } from './types.js';
 
 const logger = createLogger('OAuthTokenManager');
 
@@ -32,6 +21,32 @@ export class OAuthRefreshError extends Error {
 
 /** Buffer before expiry to trigger proactive refresh (5 minutes) */
 const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+
+const HTTP_TIMEOUT_MS = 15_000;
+
+const TWITTER_DEFAULT_EXPIRES_IN_SECONDS = 2 * 60 * 60;
+const LINKEDIN_DEFAULT_EXPIRES_IN_SECONDS = 60 * 24 * 60 * 60;
+
+const DEFAULT_EXPIRES_IN_SECONDS: Record<Platform, number> = {
+  twitter: TWITTER_DEFAULT_EXPIRES_IN_SECONDS,
+  linkedin: LINKEDIN_DEFAULT_EXPIRES_IN_SECONDS,
+};
+
+interface OAuthRefreshResponse {
+  accessToken: string;
+  refreshToken?: string;
+  expiresInSeconds?: number;
+}
+
+class OAuthHttpError extends Error {
+  readonly statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.name = 'OAuthHttpError';
+    this.statusCode = statusCode;
+  }
+}
 
 /**
  * SSM parameter paths for OAuth tokens.
@@ -93,10 +108,19 @@ export class OAuthTokenManager {
       const tokenSet: OAuthTokenSet = {
         accessToken: accessTokenResult.Parameter?.Value ?? '',
         refreshToken: refreshTokenResult.Parameter?.Value ?? '',
-        // Default expiry to now (forces refresh on first use if not set)
-        expiresAt: new Date().toISOString(),
+        expiresAt: new Date(
+          Date.now() + DEFAULT_EXPIRES_IN_SECONDS[platform] * 1000,
+        ).toISOString(),
         platform,
       };
+
+      if (tokenSet.accessToken.length === 0) {
+        throw new Error(`Missing access token in SSM for ${platform}`);
+      }
+
+      if (tokenSet.refreshToken.length === 0) {
+        throw new Error(`Missing refresh token in SSM for ${platform}`);
+      }
 
       this.tokenCache.set(platform, tokenSet);
       logger.info(`Loaded tokens for ${platform} from SSM`);
@@ -121,57 +145,30 @@ export class OAuthTokenManager {
     const expiresAt = new Date(tokens.expiresAt).getTime();
     const now = Date.now();
 
-    if (expiresAt - now > EXPIRY_BUFFER_MS) {
+    if (Number.isFinite(expiresAt) && expiresAt - now > EXPIRY_BUFFER_MS) {
       return tokens.accessToken;
     }
 
     logger.info(`Access token for ${platform} is expired or expiring soon — refreshing`);
 
-    try {
-      const refreshed = await this.refreshAccessToken(platform);
-      return refreshed.accessToken;
-    } catch (error) {
-      if (error instanceof OAuthRefreshError) {
-        throw error;
-      }
-      throw new OAuthRefreshError(
-        platform,
-        `Token refresh failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    const refreshed = await this.refreshAccessToken(platform);
+    return refreshed.accessToken;
   }
 
   /**
-   * Refresh the access token for a platform.
-   *
-   * TODO (Phase 7): Implement the actual HTTP calls to platform token endpoints.
-   *
-   * Twitter/X refresh:
-   *   POST https://api.x.com/2/oauth2/token
-   *   Content-Type: application/x-www-form-urlencoded
-   *   Authorization: Basic base64(client_id:client_secret)
-   *   Body: grant_type=refresh_token&refresh_token={refresh_token}
-   *   Response: { access_token, refresh_token, expires_in, token_type, scope }
-   *
-   * LinkedIn refresh:
-   *   POST https://www.linkedin.com/oauth/v2/accessToken
-   *   Content-Type: application/x-www-form-urlencoded
-   *   Body: grant_type=refresh_token&refresh_token={refresh_token}
-   *         &client_id={client_id}&client_secret={client_secret}
-   *   Response: { access_token, expires_in, refresh_token (optional) }
-   *
-   * On success:
-   *   - Write new access_token and refresh_token back to SSM (PutParameter, Overwrite: true)
-   *   - Update in-memory cache
-   *   - Return new OAuthTokenSet
-   *
-   * On failure (401/400 from token endpoint):
-   *   - Log error with { component: 'OAuthTokenManager', platform }
-   *   - Publish SNS admin alert (operator must re-authorize manually)
-   *   - Throw OAuthRefreshError
+   * Refreshes the current platform token using the refresh token grant,
+   * persists new token values to SSM, and updates the in-memory cache.
    */
   async refreshAccessToken(platform: Platform): Promise<OAuthTokenSet> {
     const paths = getTokenPaths(this.environment, platform);
+
+    const currentTokens = await this.loadTokens(platform);
+
+    if (currentTokens.refreshToken.length === 0) {
+      const message = `Missing refresh token for ${platform}`;
+      await this.publishAlert(platform, message);
+      throw new OAuthRefreshError(platform, message);
+    }
 
     // Load client credentials from SSM
     const [clientIdResult, clientSecretResult] = await Promise.all([
@@ -183,56 +180,201 @@ export class OAuthTokenManager {
       ),
     ]);
 
-    const _clientId = clientIdResult.Parameter?.Value ?? '';
-    const _clientSecret = clientSecretResult.Parameter?.Value ?? '';
+    const clientId = clientIdResult.Parameter?.Value ?? '';
+    const clientSecret = clientSecretResult.Parameter?.Value ?? '';
 
-    const currentTokens = this.tokenCache.get(platform);
-    const _refreshToken = currentTokens?.refreshToken ?? '';
+    if (clientId.length === 0 || clientSecret.length === 0) {
+      const message = `Missing OAuth client credentials for ${platform}`;
+      await this.publishAlert(platform, message);
+      throw new OAuthRefreshError(platform, message);
+    }
 
-    // =========================================================================
-    // TODO (Phase 7): Replace this block with actual HTTP refresh calls.
-    //
-    // if (platform === 'twitter') {
-    //   const response = await fetch('https://api.x.com/2/oauth2/token', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/x-www-form-urlencoded',
-    //       'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-    //     },
-    //     body: new URLSearchParams({
-    //       grant_type: 'refresh_token',
-    //       refresh_token: refreshToken,
-    //     }),
-    //   });
-    //   // Parse response, handle errors...
-    // }
-    //
-    // if (platform === 'linkedin') {
-    //   const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    //     body: new URLSearchParams({
-    //       grant_type: 'refresh_token',
-    //       refresh_token: refreshToken,
-    //       client_id: clientId,
-    //       client_secret: clientSecret,
-    //     }),
-    //   });
-    //   // Parse response, handle errors...
-    // }
-    // =========================================================================
+    try {
+      const response =
+        platform === 'twitter'
+          ? await this.refreshTwitterToken(currentTokens.refreshToken, clientId, clientSecret)
+          : await this.refreshLinkedInToken(currentTokens.refreshToken, clientId, clientSecret);
 
-    // For Phase 1, throw an error indicating refresh is not yet implemented
-    const errorMessage = `OAuth token refresh not yet implemented for ${platform} — implement in Phase 7`;
-    logger.error(errorMessage, { platform });
+      const expiresInSeconds =
+        response.expiresInSeconds ?? DEFAULT_EXPIRES_IN_SECONDS[platform];
 
-    // Send SNS alert
-    await this.publishAlert(
-      platform,
-      `OAuth token refresh needed for ${platform}. Manual re-authorization required.`,
+      const tokenSet: OAuthTokenSet = {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken ?? currentTokens.refreshToken,
+        expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
+        platform,
+      };
+
+      await this.writeTokensToSSM(platform, tokenSet);
+
+      logger.info(`Successfully refreshed token for ${platform}`, {
+        platform,
+        expiresAt: tokenSet.expiresAt,
+      });
+
+      return tokenSet;
+    } catch (error: unknown) {
+      const statusCode = error instanceof OAuthHttpError ? error.statusCode : undefined;
+      const message = error instanceof Error ? error.message : String(error);
+
+      logger.error(`Failed to refresh token for ${platform}`, {
+        platform,
+        statusCode,
+        error: message,
+      });
+
+      if (statusCode === 400 || statusCode === 401) {
+        await this.publishAlert(
+          platform,
+          `OAuth refresh failed for ${platform}. Manual re-authorization required. ${message}`,
+        );
+        throw new OAuthRefreshError(platform, message);
+      }
+
+      throw error;
+    }
+  }
+
+  private async refreshTwitterToken(
+    refreshToken: string,
+    clientId: string,
+    clientSecret: string,
+  ): Promise<OAuthRefreshResponse> {
+    const authorization = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    const payload = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }).toString();
+
+    const response = await this.postFormUrlEncoded(
+      'https://api.x.com/2/oauth2/token',
+      {
+        Authorization: `Basic ${authorization}`,
+      },
+      payload,
     );
 
-    throw new OAuthRefreshError(platform, errorMessage);
+    return {
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      expiresInSeconds: response.expires_in,
+    };
+  }
+
+  private async refreshLinkedInToken(
+    refreshToken: string,
+    clientId: string,
+    clientSecret: string,
+  ): Promise<OAuthRefreshResponse> {
+    const payload = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+    }).toString();
+
+    const response = await this.postFormUrlEncoded(
+      'https://www.linkedin.com/oauth/v2/accessToken',
+      {},
+      payload,
+    );
+
+    return {
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      expiresInSeconds: response.expires_in,
+    };
+  }
+
+  private async postFormUrlEncoded(
+    url: string,
+    headers: Record<string, string>,
+    body: string,
+  ): Promise<{ access_token: string; refresh_token?: string; expires_in?: number }> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          ...headers,
+        },
+        body,
+        signal: controller.signal,
+      });
+
+      const raw = (await response.json()) as unknown;
+
+      if (!response.ok) {
+        throw new OAuthHttpError(
+          response.status,
+          `Token endpoint error (${response.status}): ${this.sanitiseOAuthError(raw)}`,
+        );
+      }
+
+      if (!this.isTokenResponse(raw)) {
+        throw new Error('Token endpoint returned unexpected response shape');
+      }
+
+      return raw;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private isTokenResponse(
+    value: unknown,
+  ): value is { access_token: string; refresh_token?: string; expires_in?: number } {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+
+    const record = value as Record<string, unknown>;
+
+    if (typeof record['access_token'] !== 'string') {
+      return false;
+    }
+
+    if (
+      'refresh_token' in record &&
+      record['refresh_token'] !== undefined &&
+      typeof record['refresh_token'] !== 'string'
+    ) {
+      return false;
+    }
+
+    if (
+      'expires_in' in record &&
+      record['expires_in'] !== undefined &&
+      typeof record['expires_in'] !== 'number'
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private sanitiseOAuthError(value: unknown): string {
+    if (typeof value === 'object' && value !== null) {
+      const record = value as Record<string, unknown>;
+      const error = typeof record['error'] === 'string' ? record['error'] : undefined;
+      const description =
+        typeof record['error_description'] === 'string'
+          ? record['error_description']
+          : undefined;
+      const message = typeof record['message'] === 'string' ? record['message'] : undefined;
+
+      return [error, description, message].filter((item) => item !== undefined).join(' | ');
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    return 'Unknown OAuth token endpoint error';
   }
 
   /**

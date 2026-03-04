@@ -180,6 +180,7 @@ module "lambda_gatekeeper" {
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,
     module.sqs.send_message_policy_arn,
+    module.ssm.read_policy_arn,
   ]
   s3_bucket = module.s3.bucket_names["lambda_deployments"]
 }
@@ -192,10 +193,13 @@ module "lambda_publisher" {
   environment_variables = {
     ENVIRONMENT            = var.environment
     TABLE_PREFIX           = "${local.prefix}-"
+    PUBLISH_QUEUE_URL      = module.sqs.queue_urls["publish"]
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
+    LINKEDIN_AUTHOR_URN    = var.linkedin_author_urn
   }
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,
+    module.sqs.receive_message_policy_arn,
     module.ssm.read_policy_arn,
     module.ssm.write_policy_arn,
     module.sns.publish_policy_arn,

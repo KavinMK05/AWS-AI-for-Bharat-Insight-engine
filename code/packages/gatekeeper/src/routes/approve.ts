@@ -23,6 +23,7 @@ export async function handleApprove(
   db: DynamoDBClientWrapper,
   sqsClient: SQSClient,
   publishQueueUrl: string,
+  ownerUserId: string,
   body: string | null,
 ): Promise<{ statusCode: number; body: string }> {
   // Validate request body
@@ -89,6 +90,7 @@ export async function handleApprove(
       draftContentId: draft.id,
       contentItemId: draft.contentItemId,
       platform: draft.platform,
+      ownerUserId,
       status: 'queued',
       queuedAt: new Date().toISOString(),
     };

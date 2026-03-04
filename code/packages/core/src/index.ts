@@ -20,6 +20,7 @@ export type {
   DraftContent,
   ApprovalDigest,
   PublishingQueueItem,
+  SocialConnection,
   PlatformPreferences,
   PersonaFigure,
   PersonaFile,

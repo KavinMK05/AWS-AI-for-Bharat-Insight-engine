@@ -26,6 +26,7 @@ export const TABLE_NAMES = {
   hotTakes: 'HotTakes',
   draftContent: 'DraftContent',
   publishingQueue: 'PublishingQueue',
+  socialConnections: 'SocialConnections',
   metrics: 'Metrics',
 } as const;
 

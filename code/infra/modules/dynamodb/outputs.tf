@@ -4,6 +4,7 @@ output "table_names" {
     hot_takes        = aws_dynamodb_table.hot_takes.name
     draft_content    = aws_dynamodb_table.draft_content.name
     publishing_queue = aws_dynamodb_table.publishing_queue.name
+    social_connections = aws_dynamodb_table.social_connections.name
     metrics          = aws_dynamodb_table.metrics.name
   }
 }
@@ -14,6 +15,7 @@ output "table_arns" {
     hot_takes        = aws_dynamodb_table.hot_takes.arn
     draft_content    = aws_dynamodb_table.draft_content.arn
     publishing_queue = aws_dynamodb_table.publishing_queue.arn
+    social_connections = aws_dynamodb_table.social_connections.arn
     metrics          = aws_dynamodb_table.metrics.arn
   }
 }

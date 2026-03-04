@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { SQSClient } from '@aws-sdk/client-sqs';
+import { SSMClient } from '@aws-sdk/client-ssm';
 import {
   createLogger,
   createDynamoDBClient,
@@ -16,6 +17,11 @@ import { handleGetDigest } from './routes/digest.js';
 import { handleApprove } from './routes/approve.js';
 import { handleReject } from './routes/reject.js';
 import { handleEditApprove } from './routes/edit-approve.js';
+import {
+  handleConnectLinkedIn,
+  handleConnectTwitter,
+  handleGetSocialStatus,
+} from './routes/social.js';
 
 const logger = createLogger('Gatekeeper');
 
@@ -44,6 +50,11 @@ interface APIGatewayV2Event {
     stage: string;
     time: string;
     timeEpoch: number;
+    authorizer?: {
+      jwt?: {
+        claims?: Record<string, string>;
+      };
+    };
   };
   body?: string;
   isBase64Encoded: boolean;
@@ -63,6 +74,7 @@ const AWS_REGION = process.env['AWS_REGION'] ?? 'ap-south-1';
 
 let dbWrapper: DynamoDBClientWrapper | undefined;
 let sqsClient: SQSClient | undefined;
+let ssmClient: SSMClient | undefined;
 
 function getDBWrapper(): DynamoDBClientWrapper {
   if (!dbWrapper) {
@@ -78,6 +90,22 @@ function getSQSClient(): SQSClient {
     sqsClient = new SQSClient({ region: AWS_REGION });
   }
   return sqsClient;
+}
+
+function getSSMClient(): SSMClient {
+  if (!ssmClient) {
+    ssmClient = new SSMClient({ region: AWS_REGION });
+  }
+  return ssmClient;
+}
+
+function getUserId(event: APIGatewayV2Event): string | null {
+  const claims = event.requestContext.authorizer?.jwt?.claims;
+  if (!claims) {
+    return null;
+  }
+
+  return claims['sub'] ?? claims['cognito:username'] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,18 +155,38 @@ export async function handler(
   try {
     const db = getDBWrapper();
     const sqs = getSQSClient();
+    const ssm = getSSMClient();
     const publishQueueUrl = process.env['PUBLISH_QUEUE_URL'] ?? '';
+    const environment = process.env['ENVIRONMENT'] ?? 'dev';
+    const userId = getUserId(event);
 
     if (method === 'GET' && path === '/health') {
       response = handleHealth();
+    } else if (!userId && path.startsWith('/api/')) {
+      response = {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      };
     } else if (method === 'GET' && path === '/api/digest') {
       response = await handleGetDigest(db);
     } else if (method === 'POST' && path === '/api/approve') {
-      response = await handleApprove(db, sqs, publishQueueUrl, event.body ?? null);
+      response = await handleApprove(db, sqs, publishQueueUrl, userId ?? '', event.body ?? null);
     } else if (method === 'POST' && path === '/api/reject') {
       response = await handleReject(db, event.body ?? null);
     } else if (method === 'POST' && path === '/api/edit-approve') {
-      response = await handleEditApprove(db, sqs, publishQueueUrl, event.body ?? null);
+      response = await handleEditApprove(
+        db,
+        sqs,
+        publishQueueUrl,
+        userId ?? '',
+        event.body ?? null,
+      );
+    } else if (method === 'GET' && path === '/api/social/status') {
+      response = await handleGetSocialStatus(db, userId ?? '');
+    } else if (method === 'POST' && path === '/api/social/connect/twitter') {
+      response = await handleConnectTwitter(db, ssm, environment, userId ?? '', event.body ?? null);
+    } else if (method === 'POST' && path === '/api/social/connect/linkedin') {
+      response = await handleConnectLinkedIn(db, ssm, environment, userId ?? '', event.body ?? null);
     } else {
       response = {
         statusCode: 404,

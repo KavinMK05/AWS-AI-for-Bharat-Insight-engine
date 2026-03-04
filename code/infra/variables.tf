@@ -42,6 +42,12 @@ variable "admin_email" {
   default     = ""
 }
 
+variable "linkedin_author_urn" {
+  description = "LinkedIn member or organization URN used as author for published posts"
+  type        = string
+  default     = ""
+}
+
 variable "enable_vpc" {
   description = "Enable VPC, NAT Gateway, and private subnets. Saves ~$32/month when false."
   type        = bool

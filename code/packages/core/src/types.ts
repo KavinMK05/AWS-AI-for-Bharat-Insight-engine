@@ -152,10 +152,37 @@ export interface PublishingQueueItem {
   platformPostId?: string;
   /** URL to the published post on the platform */
   platformPostUrl?: string;
+  /** Cognito user id that approved this publish request */
+  ownerUserId?: string;
   /** Error message if publishing failed */
   errorMessage?: string;
   /** Number of retry attempts made */
   retryCount?: number;
+}
+
+/**
+ * OAuth connection for a specific dashboard user and platform.
+ * Stored in DynamoDB `SocialConnections` table.
+ */
+export interface SocialConnection {
+  /** Cognito user sub */
+  userId: string;
+  /** Platform account type */
+  platform: Platform;
+  /** OAuth access token */
+  accessToken: string;
+  /** OAuth refresh token */
+  refreshToken: string;
+  /** Access token expiry time (ISO 8601) */
+  expiresAt: string;
+  /** Optional platform-native user id */
+  platformUserId?: string;
+  /** Optional platform-native username */
+  platformUsername?: string;
+  /** Record creation time */
+  connectedAt: string;
+  /** Last update time */
+  updatedAt: string;
 }
 
 // ============================================================================

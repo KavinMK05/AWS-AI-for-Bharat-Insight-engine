@@ -131,6 +131,27 @@ resource "aws_dynamodb_table" "publishing_queue" {
   }
 }
 
+resource "aws_dynamodb_table" "social_connections" {
+  name         = "${var.prefix}-SocialConnections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId"
+  range_key    = "platform"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "platform"
+    type = "S"
+  }
+
+  tags = {
+    Name = "${var.prefix}-SocialConnections"
+  }
+}
+
 resource "aws_dynamodb_table" "metrics" {
   name         = "${var.prefix}-Metrics"
   billing_mode = "PAY_PER_REQUEST"
@@ -184,6 +205,8 @@ resource "aws_iam_policy" "dynamodb_read_write" {
           "${aws_dynamodb_table.draft_content.arn}/index/*",
           aws_dynamodb_table.publishing_queue.arn,
           "${aws_dynamodb_table.publishing_queue.arn}/index/*",
+          aws_dynamodb_table.social_connections.arn,
+          "${aws_dynamodb_table.social_connections.arn}/index/*",
           aws_dynamodb_table.metrics.arn,
           "${aws_dynamodb_table.metrics.arn}/index/*",
         ]
