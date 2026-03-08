@@ -99,8 +99,10 @@ const oauthClientCache: Partial<Record<Platform, { clientId: string; clientSecre
 
 function getCurrentLinkedInVersion(): string {
   const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  // Use previous month's version — the current month's version may not be released yet.
+  const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const year = prev.getUTCFullYear();
+  const month = String(prev.getUTCMonth() + 1).padStart(2, '0');
   return `${year}${month}`;
 }
 
