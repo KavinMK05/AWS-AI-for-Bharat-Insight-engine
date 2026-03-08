@@ -21,13 +21,15 @@ function DigestContent() {
   const [total, setTotal] = useState(0);
   const { toasts, addToast, removeToast } = useToast();
 
+  const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const loadDigest = useCallback(async (targetPage: number) => {
+  const loadDigest = useCallback(async (targetPage: number, targetSort: 'desc' | 'asc') => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchDigest(targetPage, PAGE_SIZE);
+      const data = await fetchDigest(targetPage, PAGE_SIZE, targetSort);
       setDigests(data.items);
       setTotal(data.total);
       setPage(data.page);
@@ -41,13 +43,20 @@ function DigestContent() {
   }, []);
 
   useEffect(() => {
-    loadDigest(1);
-  }, [loadDigest]);
+    loadDigest(1, sort);
+  }, [loadDigest, sort]);
 
   const goToPage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      loadDigest(newPage);
+      loadDigest(newPage, sort);
     }
+  };
+
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSort = e.target.value as 'desc' | 'asc';
+    setSort(newSort);
+    // When changing sort, reset to page 1
+    loadDigest(1, newSort);
   };
 
   return (
@@ -62,13 +71,24 @@ function DigestContent() {
             {total > 0 && ` · ${total} pending`}
           </p>
         </div>
-        <button
-          onClick={() => loadDigest(page)}
-          disabled={loading}
-          className="px-4 py-2 text-sm font-medium text-[var(--color-primary)] border border-[var(--color-primary)] rounded-lg hover:bg-[var(--color-primary)] hover:text-white transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={sort}
+            onChange={handleSortChange}
+            disabled={loading}
+            className="px-3 py-2 text-sm text-[var(--color-text)] bg-white border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
+          >
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+          <button
+            onClick={() => loadDigest(page, sort)}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-[var(--color-primary)] border border-[var(--color-primary)] rounded-lg hover:bg-[var(--color-primary)] hover:text-white transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {loading && digests.length === 0 && (
@@ -82,7 +102,7 @@ function DigestContent() {
         <div className="text-center py-16">
           <p className="text-[var(--color-danger)] font-medium">{error}</p>
           <button
-            onClick={() => loadDigest(page)}
+            onClick={() => loadDigest(page, sort)}
             className="mt-4 px-4 py-2 text-sm text-[var(--color-primary)] hover:underline"
           >
             Try again
@@ -112,25 +132,56 @@ function DigestContent() {
 
       {/* Pagination controls */}
       {total > PAGE_SIZE && (
-        <div className="flex items-center justify-center gap-3 mt-8 mb-4">
+        <div className="flex items-center justify-center gap-1.5 mt-8 mb-4">
           <button
             onClick={() => goToPage(page - 1)}
             disabled={page <= 1 || loading}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            &larr; Previous
+            &larr;
           </button>
 
-          <span className="px-3 py-2 text-sm font-medium text-[var(--color-text)]">
-            Page {page} of {totalPages}
-          </span>
+          {(() => {
+            const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
+            if (totalPages <= 7) {
+              for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+              pages.push(1);
+              if (page > 3) pages.push('ellipsis-start');
+              const start = Math.max(2, page - 1);
+              const end = Math.min(totalPages - 1, page + 1);
+              for (let i = start; i <= end; i++) pages.push(i);
+              if (page < totalPages - 2) pages.push('ellipsis-end');
+              pages.push(totalPages);
+            }
+            return pages.map((p) =>
+              typeof p === 'string' ? (
+                <span key={p} className="px-2 py-2 text-sm text-[var(--color-text-muted)]">
+                  &hellip;
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => goToPage(p)}
+                  disabled={loading}
+                  className={`min-w-[36px] px-2 py-2 text-sm font-medium rounded-lg border transition-colors disabled:opacity-40 ${
+                    p === page
+                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)]'
+                  }`}
+                >
+                  {p}
+                </button>
+              ),
+            );
+          })()}
 
           <button
             onClick={() => goToPage(page + 1)}
             disabled={page >= totalPages || loading}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-alt)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Next &rarr;
+            &rarr;
           </button>
         </div>
       )}

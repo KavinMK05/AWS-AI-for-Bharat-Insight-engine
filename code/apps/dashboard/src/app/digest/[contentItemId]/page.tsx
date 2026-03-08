@@ -29,9 +29,25 @@ function DigestDetailContent() {
   const loadDigest = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchDigest(1, 1000); // Fetch enough to find the item
-      const found = result.items.find((d) => d.contentItem.id === contentItemId);
-      setDigest(found ?? null);
+      // Paginate through all pages to find the matching content item
+      // (backend caps limit at 100)
+      const PAGE_LIMIT = 100;
+      let currentPage = 1;
+      let found: ApprovalDigest | null = null;
+
+      while (!found) {
+        const result = await fetchDigest(currentPage, PAGE_LIMIT);
+        const match = result.items.find((d) => d.contentItem.id === contentItemId);
+        if (match) {
+          found = match;
+          break;
+        }
+        // No more pages to check
+        if (currentPage * PAGE_LIMIT >= result.total) break;
+        currentPage++;
+      }
+
+      setDigest(found);
     } catch (err: unknown) {
       addToast(
         err instanceof Error ? err.message : 'Failed to load digest',

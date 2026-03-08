@@ -92,10 +92,11 @@ async function apiFetch<T>(
  * Fetch pending drafts grouped by content item (paginated).
  * Handles both the legacy flat array response and the new paginated response.
  */
-export async function fetchDigest(page = 1, limit = 30): Promise<DigestResult> {
+export async function fetchDigest(page = 1, limit = 30, sort: 'asc' | 'desc' = 'desc'): Promise<DigestResult> {
   const searchParams = new URLSearchParams();
   searchParams.set('page', String(page));
   searchParams.set('limit', String(limit));
+  searchParams.set('sort', sort);
   const raw = await apiFetch<DigestResult | ApprovalDigest[]>(
     `/api/digest?${searchParams.toString()}`,
   );

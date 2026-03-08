@@ -101,6 +101,15 @@ export async function handleGetDigest(
       });
     }
 
+    const sortDirection = params['sort'] === 'asc' ? 'asc' : 'desc';
+
+    // Sort by ingestedAt before paginating
+    allDigests.sort((a, b) => {
+      const timeA = new Date(a.contentItem.ingestedAt).getTime();
+      const timeB = new Date(b.contentItem.ingestedAt).getTime();
+      return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+
     // Paginate
     const total = allDigests.length;
     const startIndex = (page - 1) * limit;
