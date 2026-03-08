@@ -90,12 +90,24 @@ async function apiFetch<T>(
 
 /**
  * Fetch pending drafts grouped by content item (paginated).
+ * Handles both the legacy flat array response and the new paginated response.
  */
 export async function fetchDigest(page = 1, limit = 30): Promise<DigestResult> {
   const searchParams = new URLSearchParams();
   searchParams.set('page', String(page));
   searchParams.set('limit', String(limit));
-  return apiFetch<DigestResult>(`/api/digest?${searchParams.toString()}`);
+  const raw = await apiFetch<DigestResult | ApprovalDigest[]>(
+    `/api/digest?${searchParams.toString()}`,
+  );
+
+  // Handle legacy flat array response (pre-deployment)
+  if (Array.isArray(raw)) {
+    const start = (page - 1) * limit;
+    const sliced = raw.slice(start, start + limit);
+    return { items: sliced, total: raw.length, page, limit };
+  }
+
+  return raw;
 }
 
 /**
