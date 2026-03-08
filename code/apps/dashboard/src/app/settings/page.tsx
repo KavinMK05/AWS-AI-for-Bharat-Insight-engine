@@ -34,6 +34,11 @@ function PersonaSettingsSection() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [localStrings, setLocalStrings] = useState({
+    expertiseTopics: '',
+    rssFeedUrls: '',
+    arxivCategories: '',
+  });
 
   useEffect(() => {
     loadSettings();
@@ -45,6 +50,11 @@ function PersonaSettingsSection() {
       setError(null);
       const data = await fetchSettings();
       setSettings(data);
+      setLocalStrings({
+        expertiseTopics: data.expertiseTopics.join(', '),
+        rssFeedUrls: data.rssFeedUrls.join(', '),
+        arxivCategories: data.arxivCategories.join(', '),
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load persona settings');
     } finally {
@@ -70,12 +80,13 @@ function PersonaSettingsSection() {
     }
   };
 
-  const handleChange = (field: keyof PersonaFile, value: any) => {
+  const handleChange = (field: keyof PersonaFile, value: string | number | boolean) => {
     if (!settings) return;
     setSettings({ ...settings, [field]: value });
   };
 
   const handleStringArrayChange = (field: 'expertiseTopics' | 'rssFeedUrls' | 'arxivCategories', value: string) => {
+    setLocalStrings((prev) => ({ ...prev, [field]: value }));
     if (!settings) return;
     const arrayValues = value.split(',').map(s => s.trim()).filter(Boolean);
     setSettings({ ...settings, [field]: arrayValues });
@@ -84,7 +95,7 @@ function PersonaSettingsSection() {
   const handlePlatformPreferenceChange = (
     platform: 'twitter' | 'linkedin',
     field: 'hashtags' | 'emoji' | 'maxThreadLength',
-    value: any
+    value: boolean | number
   ) => {
     if (!settings) return;
     setSettings({
@@ -146,7 +157,7 @@ function PersonaSettingsSection() {
                 RSS Feed URLs (Comma separated)
               </label>
               <textarea
-                value={settings.rssFeedUrls.join(', ')}
+                value={localStrings.rssFeedUrls}
                 onChange={(e) => handleStringArrayChange('rssFeedUrls', e.target.value)}
                 className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-gray-50 h-24"
                 placeholder="https://example.com/feed.xml, https://example.org/rss"
@@ -158,7 +169,7 @@ function PersonaSettingsSection() {
               </label>
               <input
                 type="text"
-                value={settings.arxivCategories.join(', ')}
+                value={localStrings.arxivCategories}
                 onChange={(e) => handleStringArrayChange('arxivCategories', e.target.value)}
                 className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-gray-50"
                 placeholder="cs.AI, stat.ML"
@@ -219,7 +230,7 @@ function PersonaSettingsSection() {
                 Expertise Topics (Comma separated)
               </label>
               <textarea
-                value={settings.expertiseTopics.join(', ')}
+                value={localStrings.expertiseTopics}
                 onChange={(e) => handleStringArrayChange('expertiseTopics', e.target.value)}
                 className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-gray-50 h-24"
               />
