@@ -35,6 +35,16 @@ async function buildPackage(pkgName) {
     plugins: [workspacePlugin],
   });
 
+  // Copy migrations folder for packages that need it (sync, gatekeeper)
+  if (pkgName === 'sync' || pkgName === 'gatekeeper') {
+    const migrationsSrc = path.join(__dirname, '..', 'packages', 'core', 'src', 'migrations');
+    const migrationsDest = path.join(outDir, 'migrations');
+    if (fs.existsSync(migrationsSrc)) {
+      fs.cpSync(migrationsSrc, migrationsDest, { recursive: true });
+      console.log(`Copied migrations for ${pkgName}`);
+    }
+  }
+
   console.log(`Built ${pkgName}`);
 }
 
