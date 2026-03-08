@@ -195,7 +195,7 @@ export async function handler(event: APIGatewayV2Event): Promise<APIGatewayV2Res
         body: JSON.stringify({ error: 'Unauthorized' }),
       };
     } else if (method === 'GET' && path === '/api/digest') {
-      response = await handleGetDigest(db);
+      response = await handleGetDigest(db, event.rawQueryString);
     } else if (method === 'POST' && path === '/api/approve') {
       response = await handleApprove(db, sqs, publishQueueUrl, userId ?? '', event.body ?? null);
     } else if (method === 'POST' && path === '/api/reject') {

@@ -119,19 +119,31 @@ export class DynamoDBClientWrapper {
 
   /**
    * Query items using a key condition expression.
+   * Automatically paginates through all results using LastEvaluatedKey.
    */
   async queryItems<T extends Record<string, unknown>>(
     table: TableName,
     params: Omit<QueryCommandInput, 'TableName'>,
   ): Promise<T[]> {
-    const queryParams: QueryCommandInput = {
-      ...params,
-      TableName: this.tableName(table),
-    };
+    const allItems: T[] = [];
+    let exclusiveStartKey: Record<string, unknown> | undefined;
 
     try {
-      const result = await this.client.send(new QueryCommand(queryParams));
-      return (result.Items as T[]) ?? [];
+      do {
+        const queryParams: QueryCommandInput = {
+          ...params,
+          TableName: this.tableName(table),
+          ...(exclusiveStartKey && { ExclusiveStartKey: exclusiveStartKey }),
+        };
+
+        const result = await this.client.send(new QueryCommand(queryParams));
+        if (result.Items) {
+          allItems.push(...(result.Items as T[]));
+        }
+        exclusiveStartKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+      } while (exclusiveStartKey);
+
+      return allItems;
     } catch (error: unknown) {
       logger.error(`Failed to query ${table}`, {
         table,

@@ -2,7 +2,7 @@
 // API Client — Functions for calling the Gatekeeper Lambda API
 // ============================================================================
 
-import type { ApprovalDigest, HistoryQueryParams, HistoryResult } from './types';
+import type { ApprovalDigest, DigestResult, HistoryQueryParams, HistoryResult } from './types';
 
 export interface SocialConnectionStatus {
   connected: boolean;
@@ -89,10 +89,13 @@ async function apiFetch<T>(
 }
 
 /**
- * Fetch all pending drafts grouped by content item.
+ * Fetch pending drafts grouped by content item (paginated).
  */
-export async function fetchDigest(): Promise<ApprovalDigest[]> {
-  return apiFetch<ApprovalDigest[]>('/api/digest');
+export async function fetchDigest(page = 1, limit = 30): Promise<DigestResult> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('page', String(page));
+  searchParams.set('limit', String(limit));
+  return apiFetch<DigestResult>(`/api/digest?${searchParams.toString()}`);
 }
 
 /**

@@ -52,6 +52,13 @@ export interface ApprovalDigest {
   drafts: DraftContent[];
 }
 
+export interface DigestResult {
+  items: ApprovalDigest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 // ============================================================================
 // History & Search (Phase 8)
 // ============================================================================

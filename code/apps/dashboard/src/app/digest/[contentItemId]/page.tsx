@@ -29,8 +29,8 @@ function DigestDetailContent() {
   const loadDigest = useCallback(async () => {
     try {
       setLoading(true);
-      const allDigests = await fetchDigest();
-      const found = allDigests.find((d) => d.contentItem.id === contentItemId);
+      const result = await fetchDigest(1, 1000); // Fetch enough to find the item
+      const found = result.items.find((d) => d.contentItem.id === contentItemId);
       setDigest(found ?? null);
     } catch (err: unknown) {
       addToast(
