@@ -2,7 +2,7 @@ const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
 
-const LAMBDA_PACKAGES = ['watchtower', 'analyst', 'ghostwriter', 'gatekeeper', 'publisher'];
+const LAMBDA_PACKAGES = ['watchtower', 'analyst', 'ghostwriter', 'gatekeeper', 'publisher', 'sync'];
 
 const workspacePlugin = {
   name: 'workspace-resolver',

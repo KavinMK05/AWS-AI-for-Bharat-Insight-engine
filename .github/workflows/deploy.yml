@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     # 1. Only trigger when files inside the 'code' folder change
-    
 
 permissions:
   contents: read
@@ -49,7 +48,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-# Your deployment script stays exactly the same! 
+      # Your deployment script stays exactly the same!
       # Because of the 'defaults' setting above, it acts exactly as if it were in the code folder.
       - name: Deploy Lambda functions
         env:
@@ -57,8 +56,8 @@ jobs:
           S3_BUCKET: insight-engine-dev-lambda-deployments
         run: |
           mkdir -p dist
-          
-          PACKAGES=("watchtower" "analyst" "ghostwriter" "gatekeeper" "publisher")
+
+          PACKAGES=("watchtower" "analyst" "ghostwriter" "gatekeeper" "publisher" "sync")
 
           for PKG in "${PACKAGES[@]}"; do
             echo "Deploying ${PKG}..."
