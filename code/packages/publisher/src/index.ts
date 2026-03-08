@@ -823,8 +823,17 @@ async function writePublishedPostToRds(
   publishedAt: string,
 ): Promise<void> {
   const snippet = draft.content.slice(0, 280);
+  const rds = getRdsClient();
 
-  await getRdsClient().query(
+  // Ensure the content_items row exists in RDS before inserting into published_posts.
+  // The DynamoDB→RDS sync may not have copied this content item yet (race condition).
+  await rds.query(
+    `INSERT INTO content_items (id, title) VALUES ($1, $2)
+     ON CONFLICT (id) DO NOTHING`,
+    [queueItem.contentItemId, '(pending sync)'],
+  );
+
+  await rds.query(
     'INSERT INTO published_posts (id, platform, content_snippet, platform_url, published_at, content_item_id) VALUES ($1, $2, $3, $4, $5, $6)',
     [queueItem.id, queueItem.platform, snippet, platformPostUrl, publishedAt, queueItem.contentItemId],
   );
