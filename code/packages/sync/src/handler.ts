@@ -122,7 +122,7 @@ async function upsertDraftContent(
   if (hotTakeId) {
     await rds.query(
       `INSERT INTO hot_takes (id, content_item_id, text, word_count, variation_index, created_at)
-       VALUES ($1, '', '', 0, 0, NOW())
+       VALUES ($1, NULL, '', 0, 0, NOW())
        ON CONFLICT (id) DO NOTHING`,
       [hotTakeId],
     );

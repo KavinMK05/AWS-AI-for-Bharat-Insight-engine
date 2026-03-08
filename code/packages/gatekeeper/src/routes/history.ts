@@ -119,7 +119,7 @@ export async function handleGetHistory(
        LEFT JOIN content_items ci ON pp.content_item_id = ci.id
        ${whereClause}
        ORDER BY pp.published_at DESC
-       LIMIT ${limitParamIndex} OFFSET ${offsetParamIndex}`,
+       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
       dataParams,
     );
 
