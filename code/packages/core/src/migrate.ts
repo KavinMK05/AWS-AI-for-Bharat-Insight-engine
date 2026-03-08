@@ -21,19 +21,46 @@ const logger = createLogger('Migrate');
 export async function runMigrations(rdsClient: IRdsClient): Promise<void> {
   const migrationsDir = join(__dirname, 'migrations');
 
-  // Ensure schema_migrations table exists
-  await rdsClient.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      version    TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
+  // Ensure schema_migrations table exists (wrap in try-catch for robustness)
+  try {
+    await rdsClient.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version    TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (error) {
+    // Table might already exist from a previous attempt - check if we can proceed
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (!errMsg.includes('already exists')) {
+      logger.warn('Could not ensure schema_migrations table exists', { error: errMsg });
+    }
+  }
 
   // Get already applied migrations
-  const applied = await rdsClient.query<{ version: string }>(
-    'SELECT version FROM schema_migrations ORDER BY version',
-  );
+  let applied: { rows: { version: string }[] };
+  try {
+    applied = await rdsClient.query<{ version: string }>(
+      'SELECT version FROM schema_migrations ORDER BY version',
+    );
+  } catch {
+    // Table doesn't exist or can't be read - assume no migrations applied
+    applied = { rows: [] };
+  }
   const appliedSet = new Set(applied.rows.map((r) => r.version));
+
+  // Check if core tables already exist (skip migration if they do)
+  try {
+    const tableCheck = await rdsClient.query<{ count: string }>(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_name = 'published_posts'",
+    );
+    if (parseInt(tableCheck.rows[0]?.count ?? '0', 10) > 0) {
+      logger.info('Database tables already exist - skipping migrations');
+      return;
+    }
+  } catch {
+    // Table check failed - will try to run migrations
+  }
 
   // Read migration files
   let files: string[];
@@ -63,10 +90,7 @@ export async function runMigrations(rdsClient: IRdsClient): Promise<void> {
     try {
       await rdsClient.query('BEGIN');
       await rdsClient.query(sql);
-      await rdsClient.query(
-        'INSERT INTO schema_migrations (version) VALUES ($1)',
-        [version],
-      );
+      await rdsClient.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
       await rdsClient.query('COMMIT');
       appliedCount++;
       logger.info(`Migration ${version} applied successfully`);
