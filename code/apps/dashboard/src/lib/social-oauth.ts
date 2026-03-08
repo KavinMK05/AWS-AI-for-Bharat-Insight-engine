@@ -61,7 +61,7 @@ export function buildLinkedInAuthRequest(config: {
     response_type: 'code',
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
-    scope: 'w_member_social offline_access openid profile',
+    scope: 'openid profile email w_member_social',
     state,
   });
 
