@@ -1,0 +1,14 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Kavin/Documents/Hackathons/AWS AI for Bharat/code/packages/core[39m
+
+ [31m❯[39m src/__tests__/rds.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m createRdsClient[2m > [22mexecutes a query and returns results[90m 7[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { result: 1 } ][39m
+[31m   [31m×[31m createRdsClient[2m > [22mhealth check returns true on successful connection[90m 1[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:04:20
+[2m   Duration [22m 564ms[2m (transform 55ms, setup 0ms, collect 88ms, tests 10ms, environment 0ms, prepare 154ms)[22m
+

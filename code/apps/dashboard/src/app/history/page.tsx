@@ -83,7 +83,7 @@ function HistoryContent() {
   // Load on mount
   useEffect(() => {
     doSearch(1);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

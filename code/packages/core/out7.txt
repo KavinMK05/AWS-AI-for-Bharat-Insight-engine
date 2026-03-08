@@ -1,0 +1,83 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Kavin/Documents/Hackathons/AWS AI for Bharat/code/packages/core[39m
+
+[90mstdout[2m | src/__tests__/rds.test.ts[2m > [22m[2mcreateRdsClient[2m > [22m[2mexecutes a query and returns results
+[22m[39mQUERY RESULT IN TEST: {"rows":[],"rowCount":0}
+QUERY ERROR IN TEST: AssertionError: expected [] to deeply equal [ { result: 1 } ]
+    at [90mC:\Users\Kavin\Documents\Hackathons\AWS AI for Bharat\code\packages\core\[39msrc\__tests__\rds.test.ts:64:27
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/@vitest+runner@2.1.9/node_modules/[4m@vitest[24m/runner/dist/index.js:1271:3)
+    at file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/vitest@2.1.9_@types+node@22.19.13_lightningcss@1.31.1/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+    at withEnv (file:///C:/Users/Kavin/Documents/Hackathons/AWS%20AI%20for%20Bharat/code/node_modules/[4m.pnpm[24m/vitest@2.1.9_@types+node@22.19.13_lightningcss@1.31.1/node_modules/[4mvitest[24m/dist/chunks/runBaseTests.3qpJUEJM.js:90:5) {
+  actual: [],
+  expected: [ { result: [33m1[39m } ],
+  showDiff: [33mtrue[39m,
+  operator: [32m'deepStrictEqual'[39m
+}
+
+[90mstdout[2m | src/__tests__/rds.test.ts[2m > [22m[2mcreateRdsClient[2m > [22m[2mhealth check returns true on successful connection
+[22m[39mHEALTH CHECK RESULT IN TEST: [33mfalse[39m
+
+ [31m❯[39m src/__tests__/rds.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m createRdsClient[2m > [22mexecutes a query and returns results[90m 8[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { result: 1 } ][39m
+[31m   [31m×[31m createRdsClient[2m > [22mhealth check returns true on successful connection[90m 1[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:06:12
+[2m   Duration [22m 501ms[2m (transform 51ms, setup 0ms, collect 77ms, tests 12ms, environment 0ms, prepare 126ms)[22m
+
+
+STDERR:
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/rds.test.ts[2m > [22mcreateRdsClient[2m > [22mexecutes a query and returns results
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { result: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "result": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m src/__tests__/rds.test.ts:[2m64:27[22m[39m
+    [90m 62| [39m      [35mconst[39m result [33m=[39m [35mawait[39m client[33m.[39m[34mquery[39m([32m'SELECT 1'[39m)[33m;[39m
+    [90m 63| [39m      console[33m.[39m[34mlog[39m([32m'QUERY RESULT IN TEST:'[39m[33m,[39m [33mJSON[39m[33m.[39m[34mstringify[39m(result))[33m;[39m
+    [90m 64| [39m      [34mexpect[39m(result[33m.[39mrows)[33m.[39m[34mtoEqual[39m([{ result[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 65| [39m      [34mexpect[39m(result[33m.[39mrowCount)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m 66| [39m    } [35mcatch[39m (err[33m:[39m unknown) {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/__tests__/rds.test.ts[2m > [22mcreateRdsClient[2m > [22mhealth check returns true on successful connection
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/__tests__/rds.test.ts:[2m79:21[22m[39m
+    [90m 77| [39m    [35mconst[39m healthy [33m=[39m [35mawait[39m client[33m.[39m[34mhealthCheck[39m()[33m;[39m
+    [90m 78| [39m    console[33m.[39m[34mlog[39m([32m'HEALTH CHECK RESULT IN TEST:'[39m[33m,[39m healthy)[33m;[39m
+    [90m 79| [39m    [34mexpect[39m(healthy)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 80| [39m  })[33m;[39m
+    [90m 81| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+

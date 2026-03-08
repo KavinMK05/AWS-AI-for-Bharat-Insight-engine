@@ -1,0 +1,23 @@
+
+> insight-engine@0.1.0 typecheck C:\Users\Kavin\Documents\Hackathons\AWS AI for Bharat\code
+> pnpm -r typecheck
+
+Scope: 8 of 9 workspace projects
+packages/core typecheck$ tsc --noEmit
+packages/core typecheck: Done
+packages/analyst typecheck$ tsc --noEmit
+packages/gatekeeper typecheck$ tsc --noEmit
+packages/publisher typecheck$ tsc --noEmit
+packages/ghostwriter typecheck$ tsc --noEmit
+packages/ghostwriter typecheck: Done
+packages/sync typecheck$ tsc --noEmit
+packages/analyst typecheck: Done
+packages/watchtower typecheck$ tsc --noEmit
+packages/publisher typecheck: src/index.ts(815,9): error TS2304: Cannot find name 'rdsClient'.
+packages/publisher typecheck: Failed
+C:\Users\Kavin\Documents\Hackathons\AWS AI for Bharat\code\packages\publisher:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @insight-engine/publisher@0.1.0 typecheck: `tsc --noEmit`
+Exit status 2
+ ELIFECYCLE  Command failed with exit code 2.
+
+STDERR:

@@ -1,0 +1,24 @@
+
+> @insight-engine/dashboard@0.1.0 build C:\Users\Kavin\Documents\Hackathons\AWS AI for Bharat\code\apps\dashboard
+> next build
+
+   ▲ Next.js 15.5.12
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1841ms
+   Linting and checking validity of types ...
+C:\Users\Kavin\Documents\Hackathons\AWS AI for Bharat\code\apps\dashboard:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @insight-engine/dashboard@0.1.0 build: `next build`
+Exit status 1
+
+STDERR:
+
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+
+Failed to compile.
+
+./src/app/history/page.tsx
+86:11  Error: Definition for rule 'react-hooks/exhaustive-deps' was not found.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

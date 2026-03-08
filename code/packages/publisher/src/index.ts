@@ -21,6 +21,7 @@ import type {
   Platform,
   PublishingQueueItem,
   SocialConnection,
+  IRdsClient,
 } from '@insight-engine/core';
 
 const logger = createLogger('Publisher');
@@ -93,7 +94,7 @@ let sqsClient: SQSClient | undefined;
 let snsClient: SNSClient | undefined;
 let ssmClient: SSMClient | undefined;
 let oauthTokenManager: OAuthTokenManager | undefined;
-let rdsClient = createRdsClient();
+let rdsClient: IRdsClient | undefined;
 
 const oauthClientCache: Partial<Record<Platform, { clientId: string; clientSecret: string }>> = {};
 
@@ -146,6 +147,15 @@ function getSSMClient(): SSMClient {
   }
 
   return ssmClient;
+}
+
+function getRdsClient(): IRdsClient {
+  if (!rdsClient) {
+    const connectionString = requireEnv('RDS_CONNECTION_STRING');
+    rdsClient = createRdsClient({ connectionString });
+  }
+
+  return rdsClient;
 }
 
 function getOAuthTokenManager(): OAuthTokenManager {
@@ -814,7 +824,7 @@ async function writePublishedPostToRds(
 ): Promise<void> {
   const snippet = draft.content.slice(0, 280);
 
-  await rdsClient.query(
+  await getRdsClient().query(
     'INSERT INTO published_posts (id, platform, content_snippet, url, published_at, content_item_id) VALUES ($1, $2, $3, $4, $5, $6)',
     [queueItem.id, queueItem.platform, snippet, platformPostUrl, publishedAt, queueItem.contentItemId],
   );

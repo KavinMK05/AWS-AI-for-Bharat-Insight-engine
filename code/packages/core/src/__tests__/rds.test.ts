@@ -14,27 +14,25 @@ vi.mock('../logger.js', () => ({
   }),
 }));
 
-// Mock pg module — the code does `import pg from 'pg'` then `const { Pool } = pg;`
-const mockPoolQuery = vi.fn().mockResolvedValue({ rows: [{ result: 1 }], rowCount: 1 });
-const mockClient = {
+const mClient = {
   query: vi.fn().mockResolvedValue({ rows: [{ result: 1 }], rowCount: 1 }),
   release: vi.fn(),
 };
-const mockEnd = vi.fn().mockResolvedValue(undefined);
-const mockConnect = vi.fn().mockResolvedValue(mockClient);
-const mockOn = vi.fn();
 
+const mPool = {
+  connect: vi.fn().mockResolvedValue(mClient),
+  query: vi.fn().mockResolvedValue({ rows: [{ result: 1 }], rowCount: 1 }),
+  end: vi.fn().mockResolvedValue(undefined),
+  on: vi.fn(),
+};
+
+// Mock pg module using absolute certainty
 vi.mock('pg', () => {
-  const MockPool = vi.fn().mockImplementation(() => ({
-    query: mockPoolQuery,
-    connect: mockConnect,
-    end: mockEnd,
-    on: mockOn,
-  }));
-
   return {
-    default: { Pool: MockPool },
-    Pool: MockPool,
+    default: {
+      Pool: vi.fn(() => mPool),
+    },
+    Pool: vi.fn(() => mPool),
   };
 });
 
@@ -43,11 +41,6 @@ import { createRdsClient } from '../rds.js';
 describe('createRdsClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset default implementations after clearAllMocks
-    mockPoolQuery.mockResolvedValue({ rows: [{ result: 1 }], rowCount: 1 });
-    mockClient.query.mockResolvedValue({ rows: [{ result: 1 }], rowCount: 1 });
-    mockConnect.mockResolvedValue(mockClient);
-    mockEnd.mockResolvedValue(undefined);
   });
 
   it('creates a client with query method', () => {
@@ -65,9 +58,15 @@ describe('createRdsClient', () => {
       connectionString: 'postgresql://test:test@localhost:5432/test',
     });
 
-    const result = await client.query('SELECT 1');
-    expect(result.rows).toEqual([{ result: 1 }]);
-    expect(result.rowCount).toBe(1);
+    try {
+      const result = await client.query('SELECT 1');
+      console.log('QUERY RESULT IN TEST:', JSON.stringify(result));
+      expect(result.rows).toEqual([{ result: 1 }]);
+      expect(result.rowCount).toBe(1);
+    } catch (err: unknown) {
+      console.log('QUERY ERROR IN TEST:', err);
+      throw err;
+    }
   });
 
   it('health check returns true on successful connection', async () => {
@@ -76,6 +75,7 @@ describe('createRdsClient', () => {
     });
 
     const healthy = await client.healthCheck();
+    console.log('HEALTH CHECK RESULT IN TEST:', healthy);
     expect(healthy).toBe(true);
   });
 
@@ -85,6 +85,5 @@ describe('createRdsClient', () => {
     });
 
     await client.disconnect();
-    // Should not throw
   });
 });

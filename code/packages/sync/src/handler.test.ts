@@ -5,7 +5,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock @insight-engine/core
-const mockQuery = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+const { mockQuery } = vi.hoisted(() => ({
+  mockQuery: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+}));
 
 vi.mock('@insight-engine/core', () => ({
   createLogger: () => ({
