@@ -60,6 +60,44 @@ export interface DigestResult {
 }
 
 // ============================================================================
+// Persona Configuration
+// ============================================================================
+
+export type PersonaTone = 'formal' | 'casual' | 'technical' | 'humorous';
+export type DigestSchedule = 'daily' | 'twice-daily' | 'weekly';
+export type MonitoringInterval = 'hourly' | 'every-6h' | 'daily';
+
+export interface PlatformPreferences {
+  twitter: {
+    maxThreadLength: number;
+    hashtags: boolean;
+    emoji: boolean;
+  };
+  linkedin: {
+    hashtags: boolean;
+    emoji: boolean;
+  };
+}
+
+export interface PersonaFigure {
+  name: string;
+  description: string;
+}
+
+export interface PersonaFile {
+  tone: PersonaTone;
+  expertiseTopics: string[];
+  heroes: PersonaFigure[];
+  enemies: PersonaFigure[];
+  platformPreferences: PlatformPreferences;
+  relevanceThreshold: number;
+  digestSchedule: DigestSchedule;
+  monitoringInterval: MonitoringInterval;
+  rssFeedUrls: string[];
+  arxivCategories: string[];
+}
+
+// ============================================================================
 // History & Search (Phase 8)
 // ============================================================================
 

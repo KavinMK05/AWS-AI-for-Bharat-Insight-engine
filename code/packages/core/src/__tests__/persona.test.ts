@@ -37,6 +37,8 @@ function validPersonaRaw() {
     relevance_threshold: 60,
     digest_schedule: 'daily',
     monitoring_interval: 'hourly',
+    rss_feed_urls: ['https://example.com/rss'],
+    arxiv_categories: ['cs.AI'],
   };
 }
 
@@ -70,6 +72,8 @@ describe('personaFileSchema', () => {
     expect(result.relevanceThreshold).toBe(60);
     expect(result.digestSchedule).toBe('daily');
     expect(result.monitoringInterval).toBe('hourly');
+    expect(result.rssFeedUrls).toEqual(['https://example.com/rss']);
+    expect(result.arxivCategories).toEqual(['cs.AI']);
 
     // Verify snake_case keys are NOT present on the output
     expect(result).not.toHaveProperty('expertise_topics');
@@ -77,6 +81,8 @@ describe('personaFileSchema', () => {
     expect(result).not.toHaveProperty('relevance_threshold');
     expect(result).not.toHaveProperty('digest_schedule');
     expect(result).not.toHaveProperty('monitoring_interval');
+    expect(result).not.toHaveProperty('rss_feed_urls');
+    expect(result).not.toHaveProperty('arxiv_categories');
   });
 
   it('throws a zod error referencing "tone" when tone is missing', () => {
@@ -149,6 +155,8 @@ describe('loadPersona — local', () => {
     expect(persona.relevanceThreshold).toBe(60);
     expect(persona.digestSchedule).toBe('daily');
     expect(persona.monitoringInterval).toBe('hourly');
+    expect(persona.rssFeedUrls).toEqual([]);
+    expect(persona.arxivCategories).toEqual([]);
   });
 
   it('throws when the local file does not exist', async () => {

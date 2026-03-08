@@ -59,3 +59,18 @@ resource "aws_iam_policy" "read" {
     }]
   })
 }
+
+# IAM Policy for write access to persona files (used by dashboard settings API)
+resource "aws_iam_policy" "write_persona" {
+  name = "${var.prefix}-s3-write-persona"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = ["s3:PutObject"]
+      Resource = [
+        "${aws_s3_bucket.persona_files.arn}/persona.json",
+      ]
+    }]
+  })
+}

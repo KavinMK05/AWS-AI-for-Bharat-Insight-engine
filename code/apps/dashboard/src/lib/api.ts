@@ -2,7 +2,7 @@
 // API Client — Functions for calling the Gatekeeper Lambda API
 // ============================================================================
 
-import type { ApprovalDigest, DigestResult, HistoryQueryParams, HistoryResult } from './types';
+import type { ApprovalDigest, DigestResult, HistoryQueryParams, HistoryResult, PersonaFile } from './types';
 
 export interface SocialConnectionStatus {
   connected: boolean;
@@ -192,4 +192,21 @@ export async function fetchHistory(params: HistoryQueryParams): Promise<HistoryR
 
   const qs = searchParams.toString();
   return apiFetch<HistoryResult>(`/api/history${qs ? `?${qs}` : ''}`);
+}
+
+/**
+ * Fetch the current persona and ingestion settings.
+ */
+export async function fetchSettings(): Promise<PersonaFile> {
+  return apiFetch<PersonaFile>('/api/settings');
+}
+
+/**
+ * Update the persona and ingestion settings.
+ */
+export async function updateSettings(data: PersonaFile): Promise<{ message: string }> {
+  return apiFetch('/api/settings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }

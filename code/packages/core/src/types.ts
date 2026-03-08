@@ -234,6 +234,10 @@ export interface PersonaFile {
   digestSchedule: DigestSchedule;
   /** How often the Watchtower checks for new content */
   monitoringInterval: MonitoringInterval;
+  /** RSS Feed URLs for the Watchtower to monitor */
+  rssFeedUrls: string[];
+  /** arXiv Categories for the Watchtower to monitor (e.g., 'cs.AI', 'stat.ML') */
+  arxivCategories: string[];
 }
 
 // ============================================================================

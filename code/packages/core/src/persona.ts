@@ -90,6 +90,10 @@ export const personaFileSchema = z
       message:
         'monitoring_interval must be one of: "hourly", "every-6h", "daily"',
     }),
+
+    rss_feed_urls: z.array(z.string().url({ message: 'Each RSS feed must be a valid URL' })).default([]),
+    
+    arxiv_categories: z.array(z.string().min(1, { message: 'Each arXiv category must be a non-empty string' })).default([]),
   })
   .transform(
     (raw): PersonaFile => ({
@@ -111,6 +115,8 @@ export const personaFileSchema = z
       relevanceThreshold: raw.relevance_threshold,
       digestSchedule: raw.digest_schedule,
       monitoringInterval: raw.monitoring_interval,
+      rssFeedUrls: raw.rss_feed_urls,
+      arxivCategories: raw.arxiv_categories,
     }),
   );
 

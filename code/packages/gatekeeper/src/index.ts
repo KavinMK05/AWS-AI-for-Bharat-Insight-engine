@@ -26,6 +26,7 @@ import {
   handleConnectTwitter,
   handleGetSocialStatus,
 } from './routes/social.js';
+import { getSettings, updateSettings } from './routes/settings.js';
 
 const logger = createLogger('Gatekeeper');
 
@@ -222,7 +223,6 @@ export async function handler(event: APIGatewayV2Event): Promise<APIGatewayV2Res
       response = await handleGetSocialStatus(db, userId ?? '');
     } else if (method === 'POST' && path === '/api/social/connect/twitter') {
       response = await handleConnectTwitter(db, ssm, environment, userId ?? '', event.body ?? null);
-    } else if (method === 'POST' && path === '/api/social/connect/linkedin') {
       response = await handleConnectLinkedIn(
         db,
         ssm,
@@ -230,6 +230,10 @@ export async function handler(event: APIGatewayV2Event): Promise<APIGatewayV2Res
         userId ?? '',
         event.body ?? null,
       );
+    } else if (method === 'GET' && path === '/api/settings') {
+      response = await getSettings();
+    } else if (method === 'POST' && path === '/api/settings') {
+      response = await updateSettings(event.body ?? '{}');
     } else {
       response = {
         statusCode: 404,

@@ -146,9 +146,15 @@ export async function handler(): Promise<void> {
     });
   }
 
-  // ── Read source configuration from env vars ──────────────────────────
-  const rssFeedUrls = parseCommaSeparated('RSS_FEED_URLS');
-  const arxivCategories = parseCommaSeparated('ARXIV_CATEGORIES');
+  // ── Read source configuration from persona with env var fallback ──────
+  const rssFeedUrls = persona?.rssFeedUrls?.length
+    ? persona.rssFeedUrls
+    : parseCommaSeparated('RSS_FEED_URLS');
+
+  const arxivCategories = persona?.arxivCategories?.length
+    ? persona.arxivCategories
+    : parseCommaSeparated('ARXIV_CATEGORIES');
+
   const arxivMaxResults = parseInt(process.env['ARXIV_MAX_RESULTS'] ?? '10', 10);
 
   // ── Fetch from all sources ───────────────────────────────────────────

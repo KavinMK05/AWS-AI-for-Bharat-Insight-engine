@@ -172,6 +172,7 @@ module "lambda_gatekeeper" {
     ENVIRONMENT            = var.environment
     PUBLISH_QUEUE_URL      = module.sqs.queue_urls["publish"]
     TABLE_PREFIX           = "${local.prefix}-"
+    PERSONA_FILES_BUCKET   = module.s3.bucket_names["persona_files"]
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
     RDS_CONNECTION_STRING  = var.enable_rds ? module.rds[0].connection_string : ""
   }
@@ -179,6 +180,8 @@ module "lambda_gatekeeper" {
     module.dynamodb.read_write_policy_arn,
     module.sqs.send_message_policy_arn,
     module.ssm.read_policy_arn,
+    module.s3.read_policy_arn,
+    module.s3.write_persona_policy_arn,
   ]
   s3_bucket = module.s3.bucket_names["lambda_deployments"]
 }

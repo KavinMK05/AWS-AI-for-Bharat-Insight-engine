@@ -15,3 +15,7 @@ output "bucket_arns" {
 output "read_policy_arn" {
   value = aws_iam_policy.read.arn
 }
+
+output "write_persona_policy_arn" {
+  value = aws_iam_policy.write_persona.arn
+}
