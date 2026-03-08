@@ -194,6 +194,7 @@ module "lambda_publisher" {
     PUBLISH_QUEUE_URL      = module.sqs.queue_urls["publish"]
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
     LINKEDIN_AUTHOR_URN    = var.linkedin_author_urn
+    RDS_CONNECTION_STRING  = var.enable_rds ? module.rds[0].connection_string : ""
   }
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,
