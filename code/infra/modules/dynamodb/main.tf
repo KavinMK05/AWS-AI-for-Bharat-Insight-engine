@@ -214,3 +214,27 @@ resource "aws_iam_policy" "dynamodb_read_write" {
     ]
   })
 }
+
+# IAM Policy for DynamoDB Streams read access (Phase 8 — Sync Lambda)
+resource "aws_iam_policy" "dynamodb_stream_read" {
+  name = "${var.prefix}-dynamodb-stream-read"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:DescribeStream",
+          "dynamodb:ListStreams",
+        ]
+        Resource = [
+          aws_dynamodb_table.content_items.stream_arn,
+          aws_dynamodb_table.draft_content.stream_arn,
+        ]
+      }
+    ]
+  })
+}

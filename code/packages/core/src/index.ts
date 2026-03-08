@@ -28,6 +28,9 @@ export type {
   AppConfig,
   LogLevel,
   LogEntry,
+  HistoryQueryParams,
+  HistoryItem,
+  HistoryResult,
 } from './types.js';
 
 // Logger
@@ -46,9 +49,21 @@ export {
 } from './dynamodb.js';
 export type { TableName } from './dynamodb.js';
 
-// RDS (scaffold — implementation in Phase 8)
+// RDS (Phase 8)
 export { createRdsClient } from './rds.js';
 export type { RdsConfig, QueryResult, IRdsClient } from './rds.js';
+
+// Embeddings (Phase 8)
+export {
+  generateEmbedding,
+  cosineSimilarity,
+  checkSemanticDuplicate,
+  storeEmbedding,
+} from './embeddings.js';
+export type { SemanticDuplicateResult } from './embeddings.js';
+
+// Migrations (Phase 8)
+export { runMigrations } from './migrate.js';
 
 // Persona
 export { loadPersona, personaFileSchema } from './persona.js';

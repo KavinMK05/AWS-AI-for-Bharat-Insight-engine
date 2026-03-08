@@ -51,3 +51,32 @@ export interface ApprovalDigest {
   hotTake: HotTake;
   drafts: DraftContent[];
 }
+
+// ============================================================================
+// History & Search (Phase 8)
+// ============================================================================
+
+export interface HistoryQueryParams {
+  topic?: string;
+  platform?: Platform;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface HistoryItem {
+  id: string;
+  title: string;
+  platform: Platform;
+  platformUrl: string;
+  publishedAt: string;
+  contentItemId: string;
+  contentSnippet: string;
+}
+
+export interface HistoryResult {
+  total: number;
+  page: number;
+  results: HistoryItem[];
+}

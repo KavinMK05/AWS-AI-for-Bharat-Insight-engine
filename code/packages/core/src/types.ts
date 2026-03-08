@@ -301,3 +301,42 @@ export interface LogEntry {
   message: string;
   errorDetails?: Record<string, unknown>;
 }
+
+// ============================================================================
+// History & Search (Phase 8)
+// ============================================================================
+
+/** Query parameters for the history search API */
+export interface HistoryQueryParams {
+  /** Full-text search query */
+  topic?: string;
+  /** Filter by platform */
+  platform?: Platform;
+  /** Start date (ISO 8601) */
+  from?: string;
+  /** End date (ISO 8601) */
+  to?: string;
+  /** Page number (1-indexed, default 1) */
+  page?: number;
+  /** Results per page (default 20) */
+  limit?: number;
+}
+
+/** A single item in history search results */
+export interface HistoryItem {
+  id: string;
+  title: string;
+  platform: Platform;
+  platformUrl: string;
+  publishedAt: string;
+  contentItemId: string;
+  contentSnippet: string;
+}
+
+/** Paginated history search results */
+export interface HistoryResult {
+  total: number;
+  page: number;
+  results: HistoryItem[];
+}
+

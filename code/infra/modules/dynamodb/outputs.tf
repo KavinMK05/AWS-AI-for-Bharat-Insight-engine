@@ -31,3 +31,7 @@ output "draft_content_stream_arn" {
 output "read_write_policy_arn" {
   value = aws_iam_policy.dynamodb_read_write.arn
 }
+
+output "stream_read_policy_arn" {
+  value = aws_iam_policy.dynamodb_stream_read.arn
+}

@@ -24,7 +24,8 @@
       "@insight-engine/analyst": ["./packages/analyst/src"],
       "@insight-engine/ghostwriter": ["./packages/ghostwriter/src"],
       "@insight-engine/gatekeeper": ["./packages/gatekeeper/src"],
-      "@insight-engine/publisher": ["./packages/publisher/src"]
+      "@insight-engine/publisher": ["./packages/publisher/src"],
+      "@insight-engine/sync": ["./packages/sync/src"]
     }
   },
   "exclude": ["node_modules", "dist", "coverage", ".next"]

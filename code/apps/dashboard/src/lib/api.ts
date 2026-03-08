@@ -2,7 +2,7 @@
 // API Client — Functions for calling the Gatekeeper Lambda API
 // ============================================================================
 
-import type { ApprovalDigest } from './types';
+import type { ApprovalDigest, HistoryQueryParams, HistoryResult } from './types';
 
 export interface SocialConnectionStatus {
   connected: boolean;
@@ -160,4 +160,20 @@ export async function connectLinkedInAccount(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+/**
+ * Fetch publishing history with search and filtering.
+ */
+export async function fetchHistory(params: HistoryQueryParams): Promise<HistoryResult> {
+  const searchParams = new URLSearchParams();
+  if (params.topic) searchParams.set('topic', params.topic);
+  if (params.platform) searchParams.set('platform', params.platform);
+  if (params.from) searchParams.set('from', params.from);
+  if (params.to) searchParams.set('to', params.to);
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.limit) searchParams.set('limit', String(params.limit));
+
+  const qs = searchParams.toString();
+  return apiFetch<HistoryResult>(`/api/history${qs ? `?${qs}` : ''}`);
 }

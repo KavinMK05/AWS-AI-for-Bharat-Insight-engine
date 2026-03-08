@@ -1,5 +1,5 @@
 {
-  "name": "@insight-engine/gatekeeper",
+  "name": "@insight-engine/sync",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -11,14 +11,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.700.0",
-    "@aws-sdk/client-ssm": "^3.700.0",
-    "@aws-sdk/client-sqs": "^3.700.0",
-    "@insight-engine/core": "workspace:*",
-    "pg": "^8.13.0"
+    "@insight-engine/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.10.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

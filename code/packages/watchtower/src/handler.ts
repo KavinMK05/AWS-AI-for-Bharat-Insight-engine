@@ -15,8 +15,12 @@ import {
   DynamoDBClientWrapper,
   TABLE_NAMES,
   loadPersona,
+  createRdsClient,
+  generateEmbedding,
+  checkSemanticDuplicate,
+  storeEmbedding,
 } from '@insight-engine/core';
-import type { ContentItem, PersonaFile } from '@insight-engine/core';
+import type { ContentItem, PersonaFile, IRdsClient } from '@insight-engine/core';
 
 import { fetchRssItems } from './rss-monitor.js';
 import { fetchArxivItems } from './arxiv-monitor.js';
@@ -32,6 +36,16 @@ const logger = createLogger('Watchtower');
 const region = process.env['AWS_REGION'] ?? 'ap-south-1';
 const sqsClient = new SQSClient({ region });
 const dynamoClient = createDynamoDBClient(region);
+
+// RDS client — only initialised if RDS_CONNECTION_STRING is set (Phase 8)
+let rdsClient: IRdsClient | null = null;
+function getRdsClient(): IRdsClient | null {
+  if (rdsClient) return rdsClient;
+  const connStr = process.env['RDS_CONNECTION_STRING'];
+  if (!connStr) return null;
+  rdsClient = createRdsClient({ connectionString: connStr });
+  return rdsClient;
+}
 
 /**
  * Read a required env var or throw.
@@ -115,6 +129,11 @@ export async function handler(): Promise<void> {
   const personaBucket = requireEnv('PERSONA_FILES_BUCKET');
 
   const db = new DynamoDBClientWrapper(dynamoClient, tablePrefix);
+  const rds = getRdsClient();
+
+  if (rds) {
+    logger.info('RDS available — semantic duplicate detection enabled');
+  }
 
   // ── Load persona (for future use / logging context) ──────────────────
   let persona: PersonaFile | null = null;
@@ -164,11 +183,41 @@ export async function handler(): Promise<void> {
   // ── Dedup, persist, and enqueue ──────────────────────────────────────
   let itemsIngested = 0;
   let duplicatesSkipped = 0;
+  let semanticDuplicates = 0;
   let errors = 0;
 
   for (const candidate of allCandidates) {
     try {
-      const isDuplicate = await checkDuplicate(db, candidate.sourceUrl);
+      // 1. URL-based dedup (DynamoDB GSI)
+      let isDuplicate = await checkDuplicate(db, candidate.sourceUrl);
+
+      // 2. Semantic dedup (RDS + Bedrock Titan) — only if not a URL duplicate
+      if (!isDuplicate && rds) {
+        try {
+          const textForEmbedding = `${candidate.title} ${candidate.fullText}`;
+          const embedding = await generateEmbedding(textForEmbedding, region);
+
+          const semanticResult = await checkSemanticDuplicate(embedding, rds);
+          if (semanticResult.isDuplicate) {
+            isDuplicate = true;
+            semanticDuplicates++;
+            logger.info('Semantic duplicate detected', {
+              sourceUrl: candidate.sourceUrl,
+              matchingContentItemId: semanticResult.matchingContentItemId,
+              similarityScore: semanticResult.similarityScore?.toFixed(4),
+            });
+          }
+
+          // Store embedding regardless of duplicate status (for future checks)
+          const contentId = randomUUID();
+          await storeEmbedding(rds, contentId, embedding);
+        } catch (embeddingError: unknown) {
+          logger.warn('Semantic dedup check failed — continuing with URL dedup only', {
+            sourceUrl: candidate.sourceUrl,
+            error: embeddingError instanceof Error ? embeddingError.message : String(embeddingError),
+          });
+        }
+      }
 
       const contentItem = toContentItem(candidate, isDuplicate);
       const { enqueued } = await persistAndEnqueue(db, contentItem, ingestionQueueUrl);
@@ -203,11 +252,13 @@ export async function handler(): Promise<void> {
     totalCandidates: allCandidates.length,
     itemsIngested,
     duplicatesSkipped,
+    semanticDuplicates,
     errors,
     sources: {
       rss: rssFeedUrls.length,
       arxiv: arxivCategories.length,
     },
     personaLoaded: persona !== null,
+    rdsEnabled: rds !== null,
   });
 }

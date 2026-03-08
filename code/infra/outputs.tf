@@ -43,3 +43,13 @@ output "sns_admin_topic_arn" {
   description = "ARN of the admin alerts SNS topic"
   value       = module.sns.topic_arn
 }
+
+output "sync_lambda_function_name" {
+  description = "Name of the DynamoDB Streams sync Lambda (Phase 8)"
+  value       = var.enable_rds ? module.lambda_sync[0].function_name : null
+}
+
+output "rds_endpoint" {
+  description = "RDS PostgreSQL endpoint (Phase 8)"
+  value       = var.enable_rds ? module.rds[0].endpoint : null
+}

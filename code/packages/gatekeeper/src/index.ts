@@ -10,13 +10,16 @@ import {
   createLogger,
   createDynamoDBClient,
   DynamoDBClientWrapper,
+  createRdsClient,
 } from '@insight-engine/core';
+import type { IRdsClient } from '@insight-engine/core';
 
 import { handleHealth } from './routes/health.js';
 import { handleGetDigest } from './routes/digest.js';
 import { handleApprove } from './routes/approve.js';
 import { handleReject } from './routes/reject.js';
 import { handleEditApprove } from './routes/edit-approve.js';
+import { handleGetHistory } from './routes/history.js';
 import {
   handleConnectLinkedIn,
   handleConnectTwitter,
@@ -97,6 +100,15 @@ function getSSMClient(): SSMClient {
     ssmClient = new SSMClient({ region: AWS_REGION });
   }
   return ssmClient;
+}
+
+let rdsClientInstance: IRdsClient | null = null;
+function getRdsClientInstance(): IRdsClient | null {
+  if (rdsClientInstance) return rdsClientInstance;
+  const connStr = process.env['RDS_CONNECTION_STRING'];
+  if (!connStr) return null;
+  rdsClientInstance = createRdsClient({ connectionString: connStr });
+  return rdsClientInstance;
 }
 
 function getUserId(event: APIGatewayV2Event): string | null {
@@ -181,6 +193,16 @@ export async function handler(
         userId ?? '',
         event.body ?? null,
       );
+    } else if (method === 'GET' && path === '/api/history') {
+      const rdsClientForHistory = getRdsClientInstance();
+      if (!rdsClientForHistory) {
+        response = {
+          statusCode: 503,
+          body: JSON.stringify({ error: 'History feature requires RDS — not configured' }),
+        };
+      } else {
+        response = await handleGetHistory(rdsClientForHistory, event.rawQueryString);
+      }
     } else if (method === 'GET' && path === '/api/social/status') {
       response = await handleGetSocialStatus(db, userId ?? '');
     } else if (method === 'POST' && path === '/api/social/connect/twitter') {

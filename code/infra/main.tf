@@ -40,16 +40,13 @@ module "dynamodb" {
   prefix      = local.prefix
 }
 
-# --- RDS PostgreSQL (skeleton — disabled by default) ---
+# --- RDS PostgreSQL (publicly accessible — no VPC needed) ---
 module "rds" {
-  source              = "./modules/rds"
-  count               = var.enable_rds ? 1 : 0
-  environment         = var.environment
-  prefix              = local.prefix
-  master_password     = var.rds_master_password
-  vpc_id              = var.enable_vpc ? module.vpc[0].vpc_id : ""
-  private_subnet_ids  = var.enable_vpc ? module.vpc[0].private_subnet_ids : []
-  lambda_sg_id        = var.enable_vpc ? module.vpc[0].lambda_security_group_id : ""
+  source          = "./modules/rds"
+  count           = var.enable_rds ? 1 : 0
+  environment     = var.environment
+  prefix          = local.prefix
+  master_password = var.rds_master_password
 }
 
 # --- SQS Queues ---
@@ -254,4 +251,43 @@ resource "aws_lambda_event_source_mapping" "publish_to_publisher" {
   function_name    = module.lambda_publisher.function_arn
   batch_size       = 1
   enabled          = true
+}
+
+# --- Sync Lambda (Phase 8 — gated by enable_rds) ---
+module "lambda_sync" {
+  source        = "./modules/lambda"
+  count         = var.enable_rds ? 1 : 0
+  function_name = "${local.prefix}-sync"
+  handler       = "dist/index.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 120
+  environment_variables = {
+    ENVIRONMENT          = var.environment
+    TABLE_PREFIX         = "${local.prefix}-"
+    RDS_CONNECTION_STRING = var.enable_rds ? module.rds[0].connection_string : ""
+  }
+  iam_policy_arns = [
+    module.dynamodb.read_write_policy_arn,
+    module.dynamodb.stream_read_policy_arn,
+  ]
+  s3_bucket = module.s3.bucket_names["lambda_deployments"]
+}
+
+# DynamoDB Streams → Sync Lambda (Phase 8)
+resource "aws_lambda_event_source_mapping" "content_items_to_sync" {
+  count             = var.enable_rds ? 1 : 0
+  event_source_arn  = module.dynamodb.content_items_stream_arn
+  function_name     = module.lambda_sync[0].function_arn
+  starting_position = "LATEST"
+  batch_size        = 10
+  enabled           = true
+}
+
+resource "aws_lambda_event_source_mapping" "draft_content_to_sync" {
+  count             = var.enable_rds ? 1 : 0
+  event_source_arn  = module.dynamodb.draft_content_stream_arn
+  function_name     = module.lambda_sync[0].function_arn
+  starting_position = "LATEST"
+  batch_size        = 10
+  enabled           = true
 }

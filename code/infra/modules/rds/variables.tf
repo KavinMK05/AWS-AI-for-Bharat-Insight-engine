@@ -8,12 +8,8 @@ variable "master_password" {
   type      = string
   sensitive = true
 }
-variable "vpc_id" {
-  type = string
-}
-variable "private_subnet_ids" {
-  type = list(string)
-}
-variable "lambda_sg_id" {
-  type = string
+variable "allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to access the RDS instance on port 5432"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
