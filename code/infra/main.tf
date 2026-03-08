@@ -169,10 +169,11 @@ module "lambda_gatekeeper" {
   handler       = "dist/index.handler"
   runtime       = "nodejs20.x"
   environment_variables = {
-    ENVIRONMENT         = var.environment
-    PUBLISH_QUEUE_URL   = module.sqs.queue_urls["publish"]
-    TABLE_PREFIX        = "${local.prefix}-"
+    ENVIRONMENT            = var.environment
+    PUBLISH_QUEUE_URL      = module.sqs.queue_urls["publish"]
+    TABLE_PREFIX           = "${local.prefix}-"
     ADMIN_ALERTS_TOPIC_ARN = module.sns.topic_arn
+    RDS_CONNECTION_STRING  = var.enable_rds ? module.rds[0].connection_string : ""
   }
   iam_policy_arns = [
     module.dynamodb.read_write_policy_arn,

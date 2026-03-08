@@ -81,9 +81,7 @@ export async function handleGetHistory(
       paramIndex++;
     }
 
-    const whereClause = conditions.length > 0
-      ? `WHERE ${conditions.join(' AND ')}`
-      : '';
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Count total results
     const countResult = await rdsClient.query<{ count: string }>(
@@ -96,8 +94,10 @@ export async function handleGetHistory(
 
     const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
 
-    // Fetch paginated results
+    // Fetch paginated results - need to add LIMIT and OFFSET params
     const dataParams = [...queryParams, limit, offset];
+    const limitParamIndex = queryParams.length + 1;
+    const offsetParamIndex = queryParams.length + 2;
     const dataResult = await rdsClient.query<{
       id: string;
       title: string;
@@ -119,7 +119,7 @@ export async function handleGetHistory(
        LEFT JOIN content_items ci ON pp.content_item_id = ci.id
        ${whereClause}
        ORDER BY pp.published_at DESC
-       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+       LIMIT ${limitParamIndex} OFFSET ${offsetParamIndex}`,
       dataParams,
     );
 

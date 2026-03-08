@@ -25,7 +25,7 @@ resource "aws_db_subnet_group" "main" {
 
 resource "aws_security_group" "rds" {
   name_prefix = "${var.prefix}-rds-"
-  description = "RDS security group — allows inbound PostgreSQL"
+  description = "RDS security group - allows inbound PostgreSQL"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {

@@ -11,6 +11,7 @@ import {
   createDynamoDBClient,
   DynamoDBClientWrapper,
   createRdsClient,
+  runMigrations,
 } from '@insight-engine/core';
 import type { IRdsClient } from '@insight-engine/core';
 
@@ -103,11 +104,27 @@ function getSSMClient(): SSMClient {
 }
 
 let rdsClientInstance: IRdsClient | null = null;
-function getRdsClientInstance(): IRdsClient | null {
+let migrationsRun = false;
+
+async function getRdsClientInstance(): Promise<IRdsClient | null> {
   if (rdsClientInstance) return rdsClientInstance;
   const connStr = process.env['RDS_CONNECTION_STRING'];
   if (!connStr) return null;
   rdsClientInstance = createRdsClient({ connectionString: connStr });
+
+  // Run migrations on first startup
+  if (!migrationsRun) {
+    try {
+      await runMigrations(rdsClientInstance);
+      migrationsRun = true;
+    } catch (error) {
+      logger.error('Failed to run migrations', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Don't throw - let the Lambda handle individual query errors
+    }
+  }
+
   return rdsClientInstance;
 }
 
@@ -145,9 +162,7 @@ const CORS_HEADERS: Record<string, string> = {
  *   POST /api/reject      — Reject a draft
  *   POST /api/edit-approve — Edit content and approve a draft
  */
-export async function handler(
-  event: APIGatewayV2Event,
-): Promise<APIGatewayV2Response> {
+export async function handler(event: APIGatewayV2Event): Promise<APIGatewayV2Response> {
   const method = event.requestContext.http.method;
   const path = event.rawPath;
 
@@ -194,7 +209,7 @@ export async function handler(
         event.body ?? null,
       );
     } else if (method === 'GET' && path === '/api/history') {
-      const rdsClientForHistory = getRdsClientInstance();
+      const rdsClientForHistory = await getRdsClientInstance();
       if (!rdsClientForHistory) {
         response = {
           statusCode: 503,
@@ -208,7 +223,13 @@ export async function handler(
     } else if (method === 'POST' && path === '/api/social/connect/twitter') {
       response = await handleConnectTwitter(db, ssm, environment, userId ?? '', event.body ?? null);
     } else if (method === 'POST' && path === '/api/social/connect/linkedin') {
-      response = await handleConnectLinkedIn(db, ssm, environment, userId ?? '', event.body ?? null);
+      response = await handleConnectLinkedIn(
+        db,
+        ssm,
+        environment,
+        userId ?? '',
+        event.body ?? null,
+      );
     } else {
       response = {
         statusCode: 404,
