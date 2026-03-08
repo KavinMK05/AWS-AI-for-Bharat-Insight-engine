@@ -825,7 +825,7 @@ async function writePublishedPostToRds(
   const snippet = draft.content.slice(0, 280);
 
   await getRdsClient().query(
-    'INSERT INTO published_posts (id, platform, content_snippet, url, published_at, content_item_id) VALUES ($1, $2, $3, $4, $5, $6)',
+    'INSERT INTO published_posts (id, platform, content_snippet, platform_url, published_at, content_item_id) VALUES ($1, $2, $3, $4, $5, $6)',
     [queueItem.id, queueItem.platform, snippet, platformPostUrl, publishedAt, queueItem.contentItemId],
   );
 }
