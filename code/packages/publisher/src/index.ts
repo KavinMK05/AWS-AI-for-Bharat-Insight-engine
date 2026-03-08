@@ -29,7 +29,7 @@ const logger = createLogger('Publisher');
 const AWS_REGION = process.env['AWS_REGION'] ?? 'ap-south-1';
 const LINKEDIN_VERSION = process.env['LINKEDIN_VERSION'] ?? getCurrentLinkedInVersion();
 
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+
 const RETRY_DELAYS_MS = [1000, 2000, 4000] as const;
 const API_TIMEOUT_MS = 15_000;
 
@@ -721,52 +721,7 @@ async function publishLinkedInPost(
   };
 }
 
-async function getLastPublishedAt(
-  db: DynamoDBClientWrapper,
-  platform: Platform,
-): Promise<string | undefined> {
-  const publishedItems = await db.queryByIndex<PublishingQueueItem & Record<string, unknown>>(
-    TABLE_NAMES.publishingQueue,
-    'platform-status-index',
-    'platform = :platform AND #status = :status',
-    {
-      ':platform': platform,
-      ':status': 'published',
-    },
-    {
-      '#status': 'status',
-    },
-  );
 
-  let latest: string | undefined;
-
-  for (const item of publishedItems) {
-    if (!item.publishedAt) {
-      continue;
-    }
-
-    if (!latest || new Date(item.publishedAt).getTime() > new Date(latest).getTime()) {
-      latest = item.publishedAt;
-    }
-  }
-
-  return latest;
-}
-
-async function delayMessageForRateLimit(
-  sqs: SQSClient,
-  queueUrl: string,
-  receiptHandle: string,
-  waitSeconds: number,
-): Promise<void> {
-  await sqs.send(
-    new ChangeMessageVisibilityCommand({
-      QueueUrl: queueUrl,
-      ReceiptHandle: receiptHandle,
-      VisibilityTimeout: waitSeconds,
-    }),
-  );
-}
 
 async function publishAdminAlert(
   sns: SNSClient,
@@ -901,25 +856,6 @@ async function processRecord(
     return 'success';
   }
 
-  const lastPublishedAt = await getLastPublishedAt(db, queueItem.platform);
-
-  if (lastPublishedAt) {
-    const elapsedMs = Date.now() - new Date(lastPublishedAt).getTime();
-
-    if (elapsedMs < RATE_LIMIT_WINDOW_MS) {
-      const waitSeconds = Math.ceil((RATE_LIMIT_WINDOW_MS - elapsedMs) / 1000);
-
-      await delayMessageForRateLimit(sqs, publishQueueUrl, record.receiptHandle, waitSeconds);
-
-      logger.info('Rate limit delay applied', {
-        publishingQueueItemId: queueItem.id,
-        platform: queueItem.platform,
-        waitSeconds,
-      });
-
-      return 'retry';
-    }
-  }
 
   await db.updateItem(
     TABLE_NAMES.publishingQueue,
