@@ -341,6 +341,12 @@ function SettingsContent() {
     linkedInClientId: '', linkedInClientSecret: ''
   });
   const [configSuccess, setConfigSuccess] = useState<string | null>(null);
+  const [viewingClientId, setViewingClientId] = useState<{ platform: 'Twitter' | 'LinkedIn', id: string } | null>(null);
+
+  const truncateId = (id: string) => {
+    if (id.length <= 12) return id;
+    return `${id.slice(0, 6)}...${id.slice(-4)}`;
+  };
 
   const twitterRedirectUri = process.env['NEXT_PUBLIC_TWITTER_REDIRECT_URI'] ?? '';
   const linkedInRedirectUri = process.env['NEXT_PUBLIC_LINKEDIN_REDIRECT_URI'] ?? '';
@@ -578,17 +584,46 @@ function SettingsContent() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <h3 className="font-semibold text-[#1da1f2]">Twitter</h3>
-              <p className="text-sm text-gray-600">Client ID: {config?.twitterClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{config.twitterClientId}</span> : 'Not configured'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                Client ID: {config?.twitterClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{truncateId(config.twitterClientId)}</span> : 'Not configured'}
+                {config?.twitterClientId && (
+                  <button onClick={() => setViewingClientId({ platform: 'Twitter', id: config.twitterClientId })} className="text-[var(--color-primary)] text-xs hover:underline">View</button>
+                )}
+              </p>
               <p className="text-sm text-gray-600">Client Secret: {config?.hasTwitterSecret ? 'Configured ✅' : 'Not configured ❌'}</p>
             </div>
             <div className="space-y-2">
               <h3 className="font-semibold text-[#0a66c2]">LinkedIn</h3>
-              <p className="text-sm text-gray-600">Client ID: {config?.linkedInClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{config.linkedInClientId}</span> : 'Not configured'}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                Client ID: {config?.linkedInClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{truncateId(config.linkedInClientId)}</span> : 'Not configured'}
+                {config?.linkedInClientId && (
+                  <button onClick={() => setViewingClientId({ platform: 'LinkedIn', id: config.linkedInClientId })} className="text-[var(--color-primary)] text-xs hover:underline">View</button>
+                )}
+              </p>
               <p className="text-sm text-gray-600">Client Secret: {config?.hasLinkedInSecret ? 'Configured ✅' : 'Not configured ❌'}</p>
             </div>
           </div>
         )}
       </div>
+
+      {viewingClientId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-semibold mb-4">{viewingClientId.platform} Client ID</h3>
+            <div className="bg-gray-50 p-3 rounded border border-gray-200 break-all font-mono text-sm text-gray-800">
+              {viewingClientId.id}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setViewingClientId(null)}
+                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded hover:bg-[var(--color-primary-hover)] transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-[var(--color-border)] bg-white p-4">
