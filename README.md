@@ -1,6 +1,6 @@
 # Insight Engine - AI-Powered Content Pipeline
 
-**Insight Engine** is an event-driven AI content pipeline built on AWS that automatically ingests, analyzes, scores, and generates social media content from RSS feeds, arXiv papers, and Twitter. It features a human-in-the-loop approval workflow and supports publishing to Twitter/X and LinkedIn.
+**Insight Engine** is an event-driven AI content pipeline built on AWS that automatically ingests, analyzes, scores, and generates social media content from RSS feeds and arXiv papers. It features a human-in-the-loop approval workflow and supports publishing to Twitter/X and LinkedIn.
 
 ## Overview
 
@@ -13,7 +13,6 @@ flowchart TD
     subgraph Sources["Data Sources"]
         RSS[RSS Feeds]
         arXiv[arXiv Papers]
-        Twitter[Twitter/X]
     end
 
     subgraph Pipeline["Insight Engine Pipeline"]
@@ -56,7 +55,6 @@ flowchart TD
 
 - **RSS Feed Monitoring**: Automatically fetches and parses articles from configurable RSS feeds
 - **arXiv Integration**: Monitors scientific paper repositories for AI/ML research
-- **Twitter Discovery**: Ingests tweets from specified accounts or hashtags
 - **Deduplication**: Uses Titan Embeddings and DynamoDB GSI to prevent duplicate processing
 
 ### 2. AI-Powered Content Analysis

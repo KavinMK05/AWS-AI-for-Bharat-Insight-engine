@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { AuthGuard } from '@/components/auth-guard';
-import { fetchSocialStatus, fetchSettings, updateSettings } from '@/lib/api';
-import type { SocialStatusResponse } from '@/lib/api';
+import { fetchSocialStatus, fetchSettings, updateSettings, fetchSocialConfig, updateSocialConfig } from '@/lib/api';
+import type { SocialStatusResponse, SocialConfig, SocialConfigUpdate } from '@/lib/api';
 import type { PersonaFile } from '@/lib/types';
 import {
   buildLinkedInAuthRequest,
@@ -329,44 +329,90 @@ function PersonaSettingsSection() {
 
 function SettingsContent() {
   const [status, setStatus] = useState<SocialStatusResponse | null>(null);
+  const [config, setConfig] = useState<SocialConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState<'twitter' | 'linkedin' | null>(null);
 
-  const twitterClientId = process.env['NEXT_PUBLIC_TWITTER_CLIENT_ID'] ?? '';
+  const [editingConfig, setEditingConfig] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configForm, setConfigForm] = useState({
+    twitterClientId: '', twitterClientSecret: '',
+    linkedInClientId: '', linkedInClientSecret: ''
+  });
+  const [configSuccess, setConfigSuccess] = useState<string | null>(null);
+
   const twitterRedirectUri = process.env['NEXT_PUBLIC_TWITTER_REDIRECT_URI'] ?? '';
-  const linkedInClientId = process.env['NEXT_PUBLIC_LINKEDIN_CLIENT_ID'] ?? '';
   const linkedInRedirectUri = process.env['NEXT_PUBLIC_LINKEDIN_REDIRECT_URI'] ?? '';
 
   const missingConfigMessage = useMemo(() => {
     const missing: string[] = [];
 
-    if (!twitterClientId) missing.push('NEXT_PUBLIC_TWITTER_CLIENT_ID');
+    if (!config?.twitterClientId) missing.push('Twitter Client ID');
     if (!twitterRedirectUri) missing.push('NEXT_PUBLIC_TWITTER_REDIRECT_URI');
-    if (!linkedInClientId) missing.push('NEXT_PUBLIC_LINKEDIN_CLIENT_ID');
+    if (!config?.linkedInClientId) missing.push('LinkedIn Client ID');
     if (!linkedInRedirectUri) missing.push('NEXT_PUBLIC_LINKEDIN_REDIRECT_URI');
 
     if (missing.length === 0) {
       return null;
     }
 
-    return `Missing dashboard OAuth config: ${missing.join(', ')}`;
-  }, [linkedInClientId, linkedInRedirectUri, twitterClientId, twitterRedirectUri]);
+    return `Missing OAuth config: ${missing.join(', ')}`;
+  }, [config, linkedInRedirectUri, twitterRedirectUri]);
 
   useEffect(() => {
-    const loadStatus = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetchSocialStatus();
-        setStatus(response);
+        const [statusRes, configRes] = await Promise.all([
+          fetchSocialStatus(),
+          fetchSocialConfig()
+        ]);
+        setStatus(statusRes);
+        setConfig(configRes);
+        setConfigForm({
+          twitterClientId: configRes.twitterClientId || '',
+          twitterClientSecret: '',
+          linkedInClientId: configRes.linkedInClientId || '',
+          linkedInClientSecret: '',
+        });
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to load social account status');
+        setError(err instanceof Error ? err.message : 'Failed to load settings');
       } finally {
         setLoading(false);
       }
     };
 
-    loadStatus();
+    loadData();
   }, []);
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingConfig(true);
+      setError(null);
+      setConfigSuccess(null);
+      
+      const payload: SocialConfigUpdate = {};
+      if (configForm.twitterClientId !== config?.twitterClientId) payload.twitterClientId = configForm.twitterClientId;
+      if (configForm.twitterClientSecret) payload.twitterClientSecret = configForm.twitterClientSecret;
+      if (configForm.linkedInClientId !== config?.linkedInClientId) payload.linkedInClientId = configForm.linkedInClientId;
+      if (configForm.linkedInClientSecret) payload.linkedInClientSecret = configForm.linkedInClientSecret;
+
+      if (Object.keys(payload).length > 0) {
+        await updateSocialConfig(payload);
+        const newConfig = await fetchSocialConfig();
+        setConfig(newConfig);
+        setConfigForm(prev => ({ ...prev, twitterClientSecret: '', linkedInClientSecret: '' }));
+      }
+      setConfigSuccess('API Keys saved successfully');
+      setEditingConfig(false);
+      setTimeout(() => setConfigSuccess(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save API Keys');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const connectTwitter = async () => {
     if (missingConfigMessage) {
@@ -378,7 +424,7 @@ function SettingsContent() {
 
     try {
       const request = await buildTwitterAuthRequest({
-        clientId: twitterClientId,
+        clientId: config!.twitterClientId,
         redirectUri: twitterRedirectUri,
       });
 
@@ -401,7 +447,7 @@ function SettingsContent() {
 
     try {
       const request = buildLinkedInAuthRequest({
-        clientId: linkedInClientId,
+        clientId: config!.linkedInClientId,
         redirectUri: linkedInRedirectUri,
       });
 
@@ -427,10 +473,122 @@ function SettingsContent() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
           {error}
         </div>
       )}
+
+      {/* API Keys Configuration */}
+      <div className="rounded-lg border border-[var(--color-border)] bg-white p-6 md:p-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">Social API Keys</h2>
+          {!editingConfig && (
+            <button
+              onClick={() => setEditingConfig(true)}
+              className="text-sm text-[var(--color-primary)] hover:underline"
+            >
+              Edit Keys
+            </button>
+          )}
+        </div>
+        
+        {configSuccess && (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 mb-4">
+            {configSuccess}
+          </div>
+        )}
+
+        {editingConfig ? (
+          <form onSubmit={handleSaveConfig} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-100">
+                <h3 className="font-semibold text-[#1da1f2]">Twitter</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                  <input
+                    type="text"
+                    value={configForm.twitterClientId}
+                    onChange={e => setConfigForm(p => ({ ...p, twitterClientId: e.target.value }))}
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                  <input
+                    type="password"
+                    placeholder={config?.hasTwitterSecret ? '•••••••• (Configured)' : 'Enter new secret'}
+                    value={configForm.twitterClientSecret}
+                    onChange={e => setConfigForm(p => ({ ...p, twitterClientSecret: e.target.value }))}
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-100">
+                <h3 className="font-semibold text-[#0a66c2]">LinkedIn</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                  <input
+                    type="text"
+                    value={configForm.linkedInClientId}
+                    onChange={e => setConfigForm(p => ({ ...p, linkedInClientId: e.target.value }))}
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                  <input
+                    type="password"
+                    placeholder={config?.hasLinkedInSecret ? '•••••••• (Configured)' : 'Enter new secret'}
+                    value={configForm.linkedInClientSecret}
+                    onChange={e => setConfigForm(p => ({ ...p, linkedInClientSecret: e.target.value }))}
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] border p-2 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingConfig(false);
+                  setConfigForm({
+                    twitterClientId: config?.twitterClientId || '',
+                    twitterClientSecret: '',
+                    linkedInClientId: config?.linkedInClientId || '',
+                    linkedInClientSecret: '',
+                  });
+                }}
+                disabled={savingConfig}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingConfig}
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] rounded-md disabled:opacity-50"
+              >
+                {savingConfig ? 'Saving...' : 'Save Keys'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <h3 className="font-semibold text-[#1da1f2]">Twitter</h3>
+              <p className="text-sm text-gray-600">Client ID: {config?.twitterClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{config.twitterClientId}</span> : 'Not configured'}</p>
+              <p className="text-sm text-gray-600">Client Secret: {config?.hasTwitterSecret ? 'Configured ✅' : 'Not configured ❌'}</p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-[#0a66c2]">LinkedIn</h3>
+              <p className="text-sm text-gray-600">Client ID: {config?.linkedInClientId ? <span className="font-mono bg-gray-100 px-1 rounded">{config.linkedInClientId}</span> : 'Not configured'}</p>
+              <p className="text-sm text-gray-600">Client Secret: {config?.hasLinkedInSecret ? 'Configured ✅' : 'Not configured ❌'}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-[var(--color-border)] bg-white p-4">
@@ -446,7 +604,7 @@ function SettingsContent() {
           </p>
           <button
             onClick={connectTwitter}
-            disabled={connecting !== null}
+            disabled={connecting !== null || !config?.twitterClientId || !config?.hasTwitterSecret}
             className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {connecting === 'twitter'
@@ -455,6 +613,9 @@ function SettingsContent() {
                 ? 'Reconnect Twitter'
                 : 'Connect Twitter'}
           </button>
+          {(!config?.twitterClientId || !config?.hasTwitterSecret) && (
+            <p className="mt-2 text-xs text-red-500">Must configure API keys first.</p>
+          )}
         </div>
 
         <div className="rounded-lg border border-[var(--color-border)] bg-white p-4">
@@ -470,7 +631,7 @@ function SettingsContent() {
           </p>
           <button
             onClick={connectLinkedIn}
-            disabled={connecting !== null}
+            disabled={connecting !== null || !config?.linkedInClientId || !config?.hasLinkedInSecret}
             className="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {connecting === 'linkedin'
@@ -479,6 +640,9 @@ function SettingsContent() {
                 ? 'Reconnect LinkedIn'
                 : 'Connect LinkedIn'}
           </button>
+          {(!config?.linkedInClientId || !config?.hasLinkedInSecret) && (
+            <p className="mt-2 text-xs text-red-500">Must configure API keys first.</p>
+          )}
         </div>
       </div>
       <PersonaSettingsSection />

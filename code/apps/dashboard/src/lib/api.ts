@@ -16,6 +16,20 @@ export interface SocialStatusResponse {
   linkedin: SocialConnectionStatus;
 }
 
+export interface SocialConfig {
+  twitterClientId: string;
+  hasTwitterSecret: boolean;
+  linkedInClientId: string;
+  hasLinkedInSecret: boolean;
+}
+
+export interface SocialConfigUpdate {
+  twitterClientId?: string;
+  twitterClientSecret?: string;
+  linkedInClientId?: string;
+  linkedInClientSecret?: string;
+}
+
 const API_BASE_URL = process.env['NEXT_PUBLIC_API_BASE_URL'] ?? '';
 
 /**
@@ -155,6 +169,17 @@ export function isAuthenticated(): boolean {
 
 export async function fetchSocialStatus(): Promise<SocialStatusResponse> {
   return apiFetch<SocialStatusResponse>('/api/social/status');
+}
+
+export async function fetchSocialConfig(): Promise<SocialConfig> {
+  return apiFetch<SocialConfig>('/api/social/config');
+}
+
+export async function updateSocialConfig(data: SocialConfigUpdate): Promise<{ message: string }> {
+  return apiFetch('/api/social/config', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function connectTwitterAccount(payload: {

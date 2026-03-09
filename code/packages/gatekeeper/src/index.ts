@@ -26,6 +26,7 @@ import {
   handleConnectTwitter,
   handleGetSocialStatus,
 } from './routes/social.js';
+import { handleGetSocialConfig, handleUpdateSocialConfig } from './routes/social-config.js';
 import { getSettings, updateSettings } from './routes/settings.js';
 
 const logger = createLogger('Gatekeeper');
@@ -221,8 +222,13 @@ export async function handler(event: APIGatewayV2Event): Promise<APIGatewayV2Res
       }
     } else if (method === 'GET' && path === '/api/social/status') {
       response = await handleGetSocialStatus(db, userId ?? '');
+    } else if (method === 'GET' && path === '/api/social/config') {
+      response = await handleGetSocialConfig(ssm, environment);
+    } else if (method === 'POST' && path === '/api/social/config') {
+      response = await handleUpdateSocialConfig(ssm, environment, event.body ?? null);
     } else if (method === 'POST' && path === '/api/social/connect/twitter') {
       response = await handleConnectTwitter(db, ssm, environment, userId ?? '', event.body ?? null);
+    } else if (method === 'POST' && path === '/api/social/connect/linkedin') {
       response = await handleConnectLinkedIn(
         db,
         ssm,
