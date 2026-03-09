@@ -177,11 +177,11 @@ function parseTwitterDraftContent(content: string): string[] {
   const parsed = JSON.parse(content) as unknown;
 
   if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
-    return parsed;
+    return parsed.map((item) => item.replace(/\r/g, ''));
   }
 
   if (typeof parsed === 'string') {
-    return [parsed];
+    return [parsed.replace(/\r/g, '')];
   }
 
   throw new Error('Twitter DraftContent payload must be an array of tweets');
@@ -671,7 +671,10 @@ async function publishLinkedInPost(
     throw new PublishPermanentError('Missing required environment variable: LINKEDIN_AUTHOR_URN', 1);
   }
 
-  const content = parseLinkedInDraftContent(draft.content);
+  let content = parseLinkedInDraftContent(draft.content);
+  // The LinkedIn rest/posts API will silently truncate text if it encounters a carriage return character (\r)
+  // Therefore, we must strip all \r characters so paragraphs are separated purely by \n.
+  content = content.replace(/\r/g, '');
 
   const publishResult = await executeApiCallWithRetry(
     'LinkedIn publish',
