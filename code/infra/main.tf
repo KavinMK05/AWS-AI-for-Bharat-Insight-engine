@@ -180,6 +180,7 @@ module "lambda_gatekeeper" {
     module.dynamodb.read_write_policy_arn,
     module.sqs.send_message_policy_arn,
     module.ssm.read_policy_arn,
+    module.ssm.write_policy_arn,
     module.s3.read_policy_arn,
     module.s3.write_persona_policy_arn,
   ]
