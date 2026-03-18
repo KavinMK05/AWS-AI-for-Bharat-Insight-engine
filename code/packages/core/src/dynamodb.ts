@@ -11,8 +11,9 @@ import {
   QueryCommand,
   UpdateCommand,
   DeleteCommand,
+  BatchGetCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type { PutCommandInput, GetCommandInput, QueryCommandInput } from '@aws-sdk/lib-dynamodb';
+import type { PutCommandInput, GetCommandInput, QueryCommandInput, BatchGetCommandInput } from '@aws-sdk/lib-dynamodb';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('DynamoDB');
@@ -111,6 +112,69 @@ export class DynamoDBClientWrapper {
       logger.error(`Failed to get item from ${table}`, {
         table,
         key,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Batch get multiple items by primary key.
+   * Automatically handles pagination - returns all items.
+   * DynamoDB batch get limit is 100 items per request.
+   */
+  async batchGet<T extends Record<string, unknown>>(
+    table: TableName,
+    keys: Record<string, unknown>[],
+  ): Promise<(T | null)[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const tableName = this.tableName(table);
+    const allItems: Record<string, T> = {};
+    let unprocessedKeys: Record<string, unknown>[] = keys;
+
+    try {
+      while (unprocessedKeys.length > 0) {
+        const batch = unprocessedKeys.slice(0, 100);
+        unprocessedKeys = unprocessedKeys.slice(100);
+
+        const params: BatchGetCommandInput = {
+          RequestItems: {
+            [tableName]: {
+              Keys: batch,
+            },
+          },
+        };
+
+        const result = await this.client.send(new BatchGetCommand(params));
+        const responses = result.Responses?.[tableName];
+        if (responses) {
+          for (const item of responses as T[]) {
+            const id = item['id'] as string;
+            if (id) {
+              allItems[id] = item;
+            }
+          }
+        }
+
+        if (result.UnprocessedKeys && Object.keys(result.UnprocessedKeys).length > 0) {
+          unprocessedKeys = unprocessedKeys.concat(
+            Object.values(result.UnprocessedKeys).flatMap((v) => v.Keys ?? []) as Record<string, unknown>[],
+          );
+          logger.warn('Unprocessed keys in batch get', { table, count: unprocessedKeys.length });
+        }
+      }
+
+      return keys.map((key) => {
+        const id = key['id'] as string;
+        return allItems[id] ?? null;
+      });
+    } catch (error: unknown) {
+      logger.error(`Failed to batch get from ${table}`, {
+        table,
+        keyCount: keys.length,
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;

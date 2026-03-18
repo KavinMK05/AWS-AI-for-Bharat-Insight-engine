@@ -63,31 +63,59 @@ export async function handleGetDigest(
       groupedByContent.set(draft.contentItemId, existing);
     }
 
-    // Build all digest entries (we need total count for pagination)
+    // Collect all unique IDs for batch lookup
+    const contentItemIds = [...groupedByContent.keys()];
+    const hotTakeIds = [...new Set(pendingDrafts.map((d) => d.hotTakeId).filter(Boolean))];
+
+    // Batch get all ContentItems and HotTakes in parallel
+    const [contentItemResults, hotTakeResults] = await Promise.all([
+      contentItemIds.length > 0
+        ? db.batchGet<ContentItem & Record<string, unknown>>(
+            TABLE_NAMES.contentItems,
+            contentItemIds.map((id) => ({ id })),
+          )
+        : [],
+      hotTakeIds.length > 0
+        ? db.batchGet<HotTake & Record<string, unknown>>(
+            TABLE_NAMES.hotTakes,
+            hotTakeIds.map((id) => ({ id })),
+          )
+        : [],
+    ]);
+
+    // Build lookup maps for O(1) access
+    const contentItemMap = new Map<string, ContentItem>();
+    for (const item of contentItemResults) {
+      if (item) {
+        contentItemMap.set(item.id, item as ContentItem);
+      }
+    }
+
+    const hotTakeMap = new Map<string, HotTake>();
+    for (const item of hotTakeResults) {
+      if (item) {
+        hotTakeMap.set(item.id, item as HotTake);
+      }
+    }
+
+    // Build digest entries using the lookup maps
     const allDigests: ApprovalDigest[] = [];
 
     for (const [contentItemId, drafts] of groupedByContent) {
-      const contentItem = await db.getItem<ContentItem & Record<string, unknown>>(
-        TABLE_NAMES.contentItems,
-        { id: contentItemId },
-      );
+      const contentItem = contentItemMap.get(contentItemId);
 
       if (!contentItem) {
         logger.warn('ContentItem not found for pending draft', { contentItemId });
         continue;
       }
 
-      // All drafts in a group reference the same hotTakeId
       const hotTakeId = drafts[0]?.hotTakeId;
       if (!hotTakeId) {
         logger.warn('Draft missing hotTakeId', { contentItemId });
         continue;
       }
 
-      const hotTake = await db.getItem<HotTake & Record<string, unknown>>(
-        TABLE_NAMES.hotTakes,
-        { id: hotTakeId },
-      );
+      const hotTake = hotTakeMap.get(hotTakeId);
 
       if (!hotTake) {
         logger.warn('HotTake not found for pending draft', { hotTakeId, contentItemId });
@@ -95,8 +123,8 @@ export async function handleGetDigest(
       }
 
       allDigests.push({
-        contentItem: contentItem as ContentItem,
-        hotTake: hotTake as HotTake,
+        contentItem,
+        hotTake,
         drafts,
       });
     }
