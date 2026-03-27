@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
     "amazon-cognito-identity-js": "^6.3.16",
     "next": "^15.1.0",
     "react": "^19.0.0",
